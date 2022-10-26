@@ -7,6 +7,7 @@ const authRouter = require ('./routes/auth')
 const postRouter = require('./routes/post')
 
 const User = require('./models/users');
+const Post = require('./models/posts');
 const verifyToken = require('./middleware/veryfyToken');
 function connectDB() {
     try
@@ -23,7 +24,15 @@ app.use(express.json())
 app.use(cors());
 app.use('/api/auth',authRouter)
 app.use('/post',postRouter)
-app.get("/", (req, res) => res.send("hello"));
+app.get('/', verifyToken, (req, res)=>{
+    Post.find({})
+        .then((posts)=>{
+            res.json({success:true, message:"get all posts", posts})
+        })
+        .catch(err =>{
+            res.status(400).json({success:false, message:"can not all posts"})
+        })
+})
 // app.post("/upload", (req, res) => {
 //     upload(req, res, (err)=> {
 //             if(err) console.log("Lỗi",err);

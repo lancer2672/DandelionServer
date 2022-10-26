@@ -21,20 +21,29 @@ Content-Type: application/json
 ###
 POST  http://172.17.18.158:3000/post/create
 Content-Type: application/json
-Authorization: Bearer asdfsadf
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU4YWIwODRlOTdlZGFlMzBiOWZjNWYiLCJpYXQiOjE2NjY3OTIwNjIsImV4cCI6MTY2Njc5NTY2Mn0.MOVxwVNB13TLiqZCZ04IE-jG1mdH4RV7qTd-6vC5yig
 
 {
-    "title": "a",
-    "description": "a",
-    "userId":"6357566677a97146280bb36b",
+    "title": "b1",
+    "description": "b1",
+    "userId":"6358ab084e97edae30b9fc5f"
 }
 
 ###
-POST  http://172.17.18.158:3000/upload1
+GET  http://172.17.18.158:3000/upload1
 Content-Type: application/json
 
 {
     "title": "a",
     "description": "a"
 }
+###
+GET  http://172.17.18.158:3000/post
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU3NTY2Njc3YTk3MTQ2MjgwYmIzNmIiLCJpYXQiOjE2NjY3ODkxNDAsImV4cCI6MTY2Njc5Mjc0MH0.yw8pytR2cMS5DtKnupZLjqptQotX4BG6aCsCoh9lCe4
+
+{
+    "userId":"6357566677a97146280bb36b"
+}
+
 
