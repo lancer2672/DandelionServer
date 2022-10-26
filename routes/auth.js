@@ -1,8 +1,7 @@
 const express = require('express');
-const User = require('../models/user');
+const User = require('../models/users');
 const bcrypt = require('bcryptjs')
 const jwt = require ('jsonwebtoken');
-const user = require('../models/user');
 const router = express.Router();
 
 
@@ -26,7 +25,7 @@ router.post('/login',async (req,res)=>{
                     res.status(502).json({message: "error while checking user password"});
                 } else if (compareRes) { // password match
                     const token = jwt.sign({ userId: ExistUser.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-                    res.status(200).json({message: "user logged in", "token": token});
+                    res.status(200).json({message: "user logged in", "token": token, user: ExistUser});
                 } else { // password doesnt match
                     res.status(401).json({message: "password is incorrect"});
                 };
@@ -34,7 +33,6 @@ router.post('/login',async (req,res)=>{
         }
     }catch(err){
         res.status(500).json({message: "SERVER ERROR"});
-        
     }
 
     

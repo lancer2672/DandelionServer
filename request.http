@@ -4,8 +4,8 @@ POST  http://172.17.18.158:3000/api/auth/register
 Content-Type: application/json
 
 {
-    "username": "aa",
-    "password": "a",
+    "username": "a",
+    "password": "aa",
     "email": "ád@mgail.com"
 }
 ###
@@ -14,6 +14,24 @@ POST  http://172.17.18.158:3000/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "aa",
-    "password": "a",
+    "username": "a",
+    "password": "aaa"
+}
+
+###
+POST  http://172.17.18.158:3000/upload1
+Content-Type: application/json
+
+{
+    "username": "a",
+    "password": "aaa"
+}
+
+###
+POST  http://172.17.18.158:3000/upload
+Content-Type: application/json
+
+{
+    "username": "a",
+    "password": "aaa"
 }
