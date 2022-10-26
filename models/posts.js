@@ -15,14 +15,11 @@ const PostSchema = new Schema({
     url:{
         type:String,
     },
-    status:{
-        type:String,
-        enum: ['To learn', 'learning', 'learnt']
-    },
     user:{
         type: Schema.Types.ObjectId,
         ref: 'users'
-    }
-})
+    },
+    
+},{timestamps: true})
 
 module.exports = mongoose.model('post',PostSchema)

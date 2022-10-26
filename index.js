@@ -38,7 +38,7 @@ app.get("/", (req, res) => res.send("hello"));
 //             }
 //     })
 // });
-app.post("/upload1",verifyToken, (req, res) => {console.log("body",req.body)});
+app.get("/upload1", (req, res) => {console.log("body",req.body)});
 
 // const storage = multer.diskStorage({
 //     destination: "uploads",
