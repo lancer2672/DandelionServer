@@ -11,13 +11,23 @@ const UserSchema = new Schema({
         type: String,
         required:true
     },
+    nickname:{
+        type: String,
+        required:true
+    },
     email:{
         type: String,
         required:true
     },
-    avatar: {
-        data:Buffer,
-        contentType:String,    
+    avatar:
+    {
+        data: Buffer,
+        contentType: String
+    },
+    wallPaper:
+    {
+        data: Buffer,
+        contentType: String
     },
     createdAt:{
         type:Date,

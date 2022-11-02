@@ -1,60 +1,46 @@
-const express = require('express');
-require('dotenv').config()
-const mongoose = require('mongoose')
-const cors = require('cors');
-const multer = require('multer')
-const authRouter = require ('./routes/auth')
-const postRouter = require('./routes/post')
+// import { builtinModules } from "module";
 
-const User = require('./models/users');
-const Post = require('./models/posts');
-const verifyToken = require('./middleware/veryfyToken');
+const express = require("express");
+require("dotenv").config();
+const mongoose = require("mongoose");
+const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+
+const authRouter = require("./routes/auth");
+const postRouter = require("./routes/post");
+const User = require("./models/users");
+const Post = require("./models/posts");
+const verifyToken = require("./middleware/veryfyToken");
 function connectDB() {
-    try
-    { mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@dandelion.bswdcrh.mongodb.net/?retryWrites=true&w=majority`);
-    console.log("connected to DB")
-    }
-    catch(err){
-        console.log("can not connect to DB")
-    }
+  try {
+    mongoose.connect(
+      `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@dandelion.bswdcrh.mongodb.net/?retryWrites=true&w=majority`
+    );
+    console.log("connected to DB");
+  } catch (err) {
+    console.log("can not connect to DB");
+  }
 }
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix);
+  },
+});
+
+const upload = multer({ storage: storage });
+module.exports = upload;
 connectDB();
+
 const app = express();
-app.use(express.json())
+app.use(express.json());
 app.use(cors());
-app.use('/api/auth',authRouter)
-app.use('/post',postRouter)
-app.get('/', verifyToken, (req, res)=>{
-    Post.find({})
-        .then((posts)=>{
-            res.json({success:true, message:"get all posts", posts})
-        })
-        .catch(err =>{
-            res.status(400).json({success:false, message:"can not all posts"})
-        })
-})
-// app.post("/upload", (req, res) => {
-//     upload(req, res, (err)=> {
-//             if(err) console.log("Lỗi",err);
-//             else {
-//                 const {username} = req.body;
-//                 const ExistUser = User.findOne(username)
-//                 ExistUser.avatar.data = req.file.filename
-//                 ExistUser.avatar.contentType = 'image/png'
-//                 ExistUser.save()
-//                 .then(()=>{console.log("Luu thanh cong")})
-//                 .catch(err => {console.log("lỗi")})
-//             }
-//     })
-// });
-app.get("/upload1", (req, res) => {console.log("body",req.body)});
+app.use("/api/auth", authRouter);
+app.use("/post", postRouter);
 
-// const storage = multer.diskStorage({
-//     destination: "uploads",
-//     filename: function (req, file, cb) {
-//       cb(null, file.originalname)
-//     }
-//   })
-// const upload = multer({ storage: storage }).single('testImg');
-
-app.listen(process.env.PORT, ()=>console.log(`server started`))
+app.listen(process.env.PORT, () => console.log(`server started`));

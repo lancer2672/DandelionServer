@@ -1,25 +1,36 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 //Tao model
 
-const PostSchema = new Schema({
-    title: {
-        type:String,
-        required: true
+const PostSchema = new Schema(
+  {
+    // title: {
+    //     type:String,
+    //     required: true
+    // },
+    creatorName: {
+      type: String,
+      required: true,
     },
-    description:{
-        type:String,
-        required: true,
+    description: {
+      type: String,
+      required: true,
     },
-    url:{
-        type:String,
+    image: {
+      data: Buffer,
+      contentType: String,
     },
-    user:{
-        type: Schema.Types.ObjectId,
-        ref: 'users'
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "users",
     },
-    
-},{timestamps: true})
+    reactionNumber: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('post',PostSchema)
+module.exports = mongoose.model("post", PostSchema);

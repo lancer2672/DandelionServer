@@ -1,36 +1,50 @@
-POST  http://172.17.18.158:3000/api/auth/register
+POST  http://localhost:3000/api/auth/register
 Content-Type: application/json
 Authorization: Bearer asdfsadf
 
 {
-    "username": "a",
-    "password": "aa",
-    "email": "ád@mgail.com"
+    "username": "lancer1",
+    "password": "123456",
+    "email": "JBkhanhtran@mgail.com"
 }
 
 ###
-POST  http://172.17.18.158:3000/api/auth/login
+POST  http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "a",
-    "password": "a"
+    "username": "lancer1",
+    "password": "123456"
 }
 
-
 ###
-POST  http://172.17.18.158:3000/post/create
+POST  http://localhost:3000/post/create
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU4YWIwODRlOTdlZGFlMzBiOWZjNWYiLCJpYXQiOjE2NjY3OTIwNjIsImV4cCI6MTY2Njc5NTY2Mn0.MOVxwVNB13TLiqZCZ04IE-jG1mdH4RV7qTd-6vC5yig
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzYwZDNhOWMyOGRlZGVkNGZjMWU5MDUiLCJpYXQiOjE2NjcyOTAwMjksImV4cCI6MTY2NzI5MzYyOX0.tcYN0_218k1QLFuXHCzcN-3Suqk4TMai5OalUNv9oxY
 
 {
-    "title": "b1",
-    "description": "b1",
-    "userId":"6358ab084e97edae30b9fc5f"
+    "description": "day la description 2",
+    "user": {
+    "_id": "6360d3a9c28deded4fc1e905",
+    "username": "lancer1",
+    "password": "$2a$12$mMQuqCCeXf72ENBrNc7C7.H7yKmJODjI1Gool88bbQlvoXDuleaG6",
+    "nickname": "lancer1",
+    "email": "JBkhanhtran@mgail.com",
+    "createdAt": "2022-11-01T08:07:05.953Z",
+    "__v": 0
+  }
+}
+###
+PUT  http://localhost:3000/post/6360c41bc2948c034b3450f9
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU4ZDY2ZWVmMTc2MjFiNmFhMjBlOWEiLCJpYXQiOjE2NjcyODI5MjcsImV4cCI6MTY2NzI4NjUyN30.gC6ErxKc1hCdfepHLtwSlvhgS7Pw_XlMUVr_yPI_mTY
+
+{
+    "description": "asdasdsad"
 }
 
 ###
-GET  http://172.17.18.158:3000/upload1
+GET  http://localhost:3000/upload1
 Content-Type: application/json
 
 {
@@ -38,12 +52,19 @@ Content-Type: application/json
     "description": "a"
 }
 ###
-GET  http://172.17.18.158:3000/post
+GET  http://localhost:3000/post
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU3NTY2Njc3YTk3MTQ2MjgwYmIzNmIiLCJpYXQiOjE2NjY3ODkxNDAsImV4cCI6MTY2Njc5Mjc0MH0.yw8pytR2cMS5DtKnupZLjqptQotX4BG6aCsCoh9lCe4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU4YWIwODRlOTdlZGFlMzBiOWZjNWYiLCJpYXQiOjE2NjcyODgyMTcsImV4cCI6MTY2NzI5MTgxN30.oTjYixvvFB33HrkB5KphGk3N24kRf7vo1LhYxHo2hcM
 
 {
-    "userId":"6357566677a97146280bb36b"
+   "user": {
+    "_id": "6358d66eef17621b6aa20e9a",
+    "username": "a1",
+    "password": "$2a$12$kyWaGDR76eRZzBxgX8wT1ejYLJpXT7WAGRPv/KI/Fk1B5.VkAlogO",
+    "email": "a",
+    "createdAt": "2022-10-26T06:40:46.844Z",
+    "__v": 0
+  }
 }
 
 
