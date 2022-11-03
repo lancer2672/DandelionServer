@@ -19,22 +19,23 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // ROUTES
-router.post("/create", verifyToken, (req, res) => {
-  const { user, description } = req.body;
-  const newPost = new Post({
-    description,
-    user: user.id,
-    creatorName: user.nickname,
-  });
-  newPost
-    .save()
-    .then(() => {
-      res.json({ success: true, message: "create post successfully", newPost });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: "create post failed" });
-    });
-});
+
+// router.post("/create", verifyToken, (req, res) => {
+//   const { user, description } = req.body;
+//   const newPost = new Post({
+//     description,
+//     user: user.id,
+//     creatorName: user.nickname,
+//   });
+//   newPost
+//     .save()
+//     .then(() => {
+//       res.json({ success: true, message: "create post successfully", newPost });
+//     })
+//     .catch((err) => {
+//       res.status(400).json({ success: false, message: "create post failed" });
+//     });
+// });
 
 router.get("/", verifyToken, (req, res) => {
   Post.find({})
@@ -79,19 +80,19 @@ router.put("/:id", verifyToken, async (req, res) => {
 
 router.post("/delete", verifyToken, (req, res) => {});
 router.post(
-  "/image",
+  "/create",
   verifyToken,
   upload.single("testImage"),
   async (req, res) => {
-    console.log("reqFile ", req.file);
+    console.log(req.body);
     const { description } = req.body;
     const user = await User.findById(req.userId);
     const newPost = new Post({
-      description,
+      description: description || " ",
       user: req.userId,
       creatorName: user.nickname,
       image: {
-        data: fs.readFileSync(`uploads/${req.file.filename}`),
+        data: req.file && fs.readFileSync(`uploads/${req.file.filename}`),
       },
     });
     // console.log("My new post", newPost);
