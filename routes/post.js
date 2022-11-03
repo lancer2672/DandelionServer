@@ -83,7 +83,7 @@ router.post(
   verifyToken,
   upload.single("testImage"),
   async (req, res) => {
-    console.log("reqBody ", req.body);
+    console.log("reqFile ", req.file);
     const { description } = req.body;
     const user = await User.findById(req.userId);
     const newPost = new Post({
