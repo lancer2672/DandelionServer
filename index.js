@@ -4,14 +4,9 @@ const express = require("express");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const cors = require("cors");
-const multer = require("multer");
 const path = require("path");
-
 const authRouter = require("./routes/auth");
 const postRouter = require("./routes/post");
-const User = require("./models/users");
-const Post = require("./models/posts");
-const verifyToken = require("./middleware/veryfyToken");
 function connectDB() {
   try {
     mongoose.connect(
@@ -23,18 +18,6 @@ function connectDB() {
   }
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix);
-  },
-});
-
-const upload = multer({ storage: storage });
-module.exports = upload;
 connectDB();
 
 const app = express();

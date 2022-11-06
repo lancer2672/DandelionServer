@@ -17,26 +17,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
-
-// ROUTES
-
-// router.post("/create", verifyToken, (req, res) => {
-//   const { user, description } = req.body;
-//   const newPost = new Post({
-//     description,
-//     user: user.id,
-//     creatorName: user.nickname,
-//   });
-//   newPost
-//     .save()
-//     .then(() => {
-//       res.json({ success: true, message: "create post successfully", newPost });
-//     })
-//     .catch((err) => {
-//       res.status(400).json({ success: false, message: "create post failed" });
-//     });
-// });
-
 router.get("/", verifyToken, (req, res) => {
   Post.find({})
     .then((posts) => {
@@ -84,18 +64,17 @@ router.post(
   verifyToken,
   upload.single("testImage"),
   async (req, res) => {
-    console.log(req.body);
     const { description } = req.body;
     const user = await User.findById(req.userId);
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
       creatorName: user.nickname,
-      image: {
-        data: req.file && fs.readFileSync(`uploads/${req.file.filename}`),
-      },
     });
-    // console.log("My new post", newPost);
+    //nếu có kèm ảnh
+    if (req.file) {
+      newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
+    }
     newPost
       .save()
       .then(() => {
