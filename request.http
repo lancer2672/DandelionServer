@@ -20,7 +20,7 @@ Content-Type: application/json
 ###
 POST  http://localhost:3000/post/create
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzYwZDNhOWMyOGRlZGVkNGZjMWU5MDUiLCJpYXQiOjE2NjcyOTAwMjksImV4cCI6MTY2NzI5MzYyOX0.tcYN0_218k1QLFuXHCzcN-3Suqk4TMai5OalUNv9oxY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzYwZDNhOWMyOGRlZGVkNGZjMWU5MDUiLCJpYXQiOjE2NjcyOTM4NzcsImV4cCI6MTY2NzI5NzQ3N30.r9w27mBBcZGMwDo9B1oAzJ2qkO2dVeOXgFfA9pWT4XQ
 
 {
     "description": "day la description 2",
@@ -43,14 +43,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzU4Z
     "description": "asdasdsad"
 }
 
-###
-GET  http://localhost:3000/upload1
-Content-Type: application/json
-
-{
-    "title": "a",
-    "description": "a"
-}
 ###
 GET  http://localhost:3000/post
 Content-Type: application/json
