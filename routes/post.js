@@ -62,7 +62,7 @@ router.post("/delete", verifyToken, (req, res) => {});
 router.post(
   "/create",
   verifyToken,
-  upload.single("testImage"),
+  upload.single("postImage"),
   async (req, res) => {
     const { description } = req.body;
     const user = await User.findById(req.userId);
@@ -73,6 +73,7 @@ router.post(
     });
     //nếu có kèm ảnh
     if (req.file) {
+      console.log(req.file);
       newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
     }
     newPost
