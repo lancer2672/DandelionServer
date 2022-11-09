@@ -19,6 +19,7 @@ const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
+  console.log("putting");
   try {
     const user = await User.findById(req.userId);
     let updatedUser = {
@@ -28,6 +29,7 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
       wallPaper: user.wallPaper,
     };
     if (req.file) {
+      console.log("file", req.file);
       updatedUser.avatar.data = fs.readFileSync(`uploads/${req.file.filename}`);
     }
     result = await User.findOneAndUpdate({ id: req.userId }, updatedUser, {
