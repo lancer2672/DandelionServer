@@ -20,7 +20,7 @@ const upload = multer({ storage: storage });
 router.get("/", verifyToken, (req, res) => {
   Post.find({})
     .then((posts) => {
-      //chưa xử lý việc tìm đúng chưa (có post nhưng trả về rỗng)
+      // TODO: xử lý việc tìm đúng chưa (có post nhưng trả về rỗng)
       res.json({
         success: true,
         message: "got posts",
@@ -33,19 +33,34 @@ router.get("/", verifyToken, (req, res) => {
 });
 
 router.put("/:id", verifyToken, async (req, res) => {
-  const { description, reactionNumber } = req.body;
+  const { des, reactionNumber, content } = req.body;
+  const user = await User.findById(req.userId);
+  const newComment = {
+    content,
+    user: req.userId,
+    creatorName: user.nickname,
+  };
   try {
-    let updatedPost = {
-      description: description || "",
-      reactionNumber: reactionNumber || 0,
-    };
+    let updatedPost = {};
+    if (des) {
+      updatedPost.description = des;
+    }
+
+    if (content) {
+      const post = await Post.findById(req.params.id);
+
+      post.comments.push(newComment);
+
+      await post.save();
+    }
     updatedPost = await Post.findOneAndUpdate(
-      { id: req.params.postId },
+      { id: req.params.id },
       updatedPost,
       {
         new: true,
       }
     );
+    //check if user comment
     if (!updatedPost) {
       return res.status(401).json({
         sucess: false,
@@ -59,6 +74,7 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 router.post("/delete", verifyToken, (req, res) => {});
+
 router.post(
   "/create",
   verifyToken,
@@ -66,14 +82,16 @@ router.post(
   async (req, res) => {
     const { description } = req.body;
     const user = await User.findById(req.userId);
+
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
       creatorName: user.nickname,
+      comments: [],
+      likes: [],
     });
     //nếu có kèm ảnh
     if (req.file) {
-      console.log(req.file);
       newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
     }
     newPost

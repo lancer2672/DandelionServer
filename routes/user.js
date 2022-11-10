@@ -29,7 +29,6 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
       wallPaper: user.wallPaper,
     };
     if (req.file) {
-      console.log("file", req.file);
       updatedUser.avatar.data = fs.readFileSync(`uploads/${req.file.filename}`);
     }
     result = await User.findOneAndUpdate({ id: req.userId }, updatedUser, {
