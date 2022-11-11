@@ -15,7 +15,6 @@ const PostSchema = new Schema(
     },
     description: {
       type: String,
-      required: true,
     },
     image: {
       data: Buffer,
@@ -25,13 +24,8 @@ const PostSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "users",
     },
-    reactionNumber: {
-      type: Number,
-      default: 0,
-    },
     likes: [
       {
-        creatorName: String,
         userId: {
           type: Schema.Types.ObjectId,
           ref: "users",

@@ -17,6 +17,7 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
+
 router.get("/", verifyToken, (req, res) => {
   Post.find({})
     .then((posts) => {
@@ -33,7 +34,7 @@ router.get("/", verifyToken, (req, res) => {
 });
 
 router.put("/:id", verifyToken, async (req, res) => {
-  const { des, reactionNumber, content } = req.body;
+  const { des, react, content } = req.body;
   const user = await User.findById(req.userId);
   const newComment = {
     content,
@@ -45,12 +46,30 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (des) {
       updatedPost.description = des;
     }
-
+    console.log("GOIN REACT");
+    if (react) {
+      const post = await Post.findById(req.params.id);
+      var isExisted = false;
+      for (let i = 0; i < post.likes.length; i++) {
+        if (post.likes[i].userId == req.userId) {
+          isExisted = true;
+        }
+      }
+      //Not found
+      if (!isExisted) {
+        post.likes.push({ userId: req.userId });
+      } else {
+        post.likes = post.likes.filter((item) => {
+          return item.userId != req.userId;
+        });
+        console.log(post.likes);
+      }
+      await post.save();
+    }
+    //check if user comment
     if (content) {
       const post = await Post.findById(req.params.id);
-
       post.comments.push(newComment);
-
       await post.save();
     }
     updatedPost = await Post.findOneAndUpdate(
@@ -60,7 +79,7 @@ router.put("/:id", verifyToken, async (req, res) => {
         new: true,
       }
     );
-    //check if user comment
+
     if (!updatedPost) {
       return res.status(401).json({
         sucess: false,
@@ -69,6 +88,7 @@ router.put("/:id", verifyToken, async (req, res) => {
     }
     res.json({ sucess: true, message: "excellent progess", updatedPost });
   } catch (err) {
+    console.log(err);
     return res.status(400).json({ sucess: false, message: "Error!" });
   }
 });
