@@ -19,7 +19,6 @@ const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
-  console.log("putting");
   try {
     const user = await User.findById(req.userId);
     let updatedUser = {
@@ -45,6 +44,21 @@ router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
     return res
       .status(400)
       .json({ sucess: false, message: "cannot update your information" });
+  }
+});
+
+router.get("/:id", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(401).json({
+        sucess: false,
+        message: "cannot find user",
+      });
+    }
+    res.json({ sucess: true, message: "get user successfully", user });
+  } catch (err) {
+    return res.status(400).json({ sucess: false, message: "cannot get user" });
   }
 });
 

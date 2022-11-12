@@ -38,7 +38,7 @@ router.put("/:id", verifyToken, async (req, res) => {
   const user = await User.findById(req.userId);
   const newComment = {
     content,
-    user: req.userId,
+    userId: req.userId,
     creatorName: user.nickname,
   };
   try {
@@ -46,7 +46,6 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (des) {
       updatedPost.description = des;
     }
-    console.log("GOIN REACT");
     if (react) {
       const post = await Post.findById(req.params.id);
       var isExisted = false;
