@@ -101,7 +101,7 @@ router.post(
   async (req, res) => {
     const { description } = req.body;
     const user = await User.findById(req.userId);
-
+    console.log(req.file);
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
