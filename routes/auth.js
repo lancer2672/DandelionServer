@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
+
   if (!username) {
     return res.status(400).json({ message: "username is missing" });
   }
@@ -14,6 +15,7 @@ router.post("/login", async (req, res) => {
   }
   try {
     const existUser = await User.findOne({ username });
+
     if (!existUser) {
       return res.status(400).json({ message: "user do not exist" });
     } else {
@@ -73,6 +75,9 @@ router.post("/register", async (req, res) => {
           username,
           password: passwordHash,
           email,
+          avatar: {
+            data: "",
+          },
           nickname: username,
         });
         try {
@@ -85,9 +90,7 @@ router.post("/register", async (req, res) => {
         return res.json({
           success: "true",
           message: "register successfully",
-          username,
-          password,
-          email,
+          user: newUser,
         });
       }
     });

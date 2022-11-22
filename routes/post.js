@@ -29,7 +29,7 @@ router.get("/", verifyToken, (req, res) => {
       });
     })
     .catch((err) => {
-      res.status(400).json({ success: false, message: "can not all posts" });
+      res.status(400).json({ success: false, message: "cannot get all posts" });
     });
 });
 
@@ -92,7 +92,17 @@ router.put("/:id", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/delete", verifyToken, (req, res) => {});
+router.delete("/:id", verifyToken, async (req, res) => {
+  await Post.findOneAndDelete({ _id: req.params.id })
+    .then(() => {
+      res.json({ sucess: true, message: "excellent progess" });
+    })
+    .catch((error) => {
+      res
+        .status(400)
+        .json({ sucess: false, message: "cannot delete this post!" });
+    });
+});
 
 router.post(
   "/create",
@@ -101,7 +111,6 @@ router.post(
   async (req, res) => {
     const { description } = req.body;
     const user = await User.findById(req.userId);
-    console.log(req.file);
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
