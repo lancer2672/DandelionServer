@@ -71,6 +71,7 @@ router.put("/:id", verifyToken, async (req, res) => {
       post.comments.push(newComment);
       await post.save();
     }
+
     updatedPost = await Post.findOneAndUpdate(
       { id: req.params.id },
       updatedPost,
@@ -93,15 +94,18 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
-  await Post.findOneAndDelete({ _id: req.params.id })
-    .then(() => {
-      res.json({ sucess: true, message: "excellent progess" });
-    })
-    .catch((error) => {
-      res
-        .status(400)
-        .json({ sucess: false, message: "cannot delete this post!" });
-    });
+  const deletedPost = await Post.findById(req.params.id);
+  if (deletedPost.user.id == req.userId) {
+    await Post.deleteOne({ _id: req.params.id })
+      .then(() => {
+        res.json({ sucess: true, message: "excellent progess" });
+      })
+      .catch((error) => {
+        res
+          .status(400)
+          .json({ sucess: false, message: "cannot delete this post!" });
+      });
+  }
 });
 
 router.post(

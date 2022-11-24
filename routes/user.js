@@ -18,34 +18,55 @@ const upload = multer({ storage: storage });
 
 const router = express.Router();
 
-router.put("/:id", verifyToken, upload.single("avatar"), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    let updatedUser = {
-      nickname: req.body.nickname || user.nickname,
-      email: req.body.email || user.email,
-      avatar: user.avatar,
-      wallPaper: user.wallPaper,
-    };
-    if (req.file) {
-      updatedUser.avatar.data = fs.readFileSync(`uploads/${req.file.filename}`);
-    }
-    result = await User.findOneAndUpdate({ id: req.userId }, updatedUser, {
-      new: true,
-    });
-    if (!result) {
-      return res.status(401).json({
-        sucess: false,
-        message: "You are not authorized or post not found ",
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("userImage"),
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.userId);
+      let updatedUser = {
+        nickname: req.body.nickname || user.nickname,
+        email: req.body.email || user.email,
+        avatar: user.avatar,
+        wallPaper: user.wallPaper,
+      };
+      if (req.file) {
+        console.log("wallpaper", req.body.isWallpaper);
+        if (req.body.isWallpaper == "false") {
+          updatedUser.avatar.data = fs.readFileSync(
+            `uploads/${req.file.filename}`
+          );
+          console.log("read");
+        } else {
+          updatedUser.wallPaper.data = fs.readFileSync(
+            `uploads/${req.file.filename}`
+          );
+        }
+      }
+      result = await User.findOneAndUpdate({ _id: req.userId }, updatedUser, {
+        new: true,
       });
+      if (!result) {
+        return res.status(401).json({
+          sucess: false,
+          message: "You are not authorized or post not found ",
+        });
+      }
+
+      res.json({
+        sucess: true,
+        message: "excellent progess",
+        user: result,
+        updatedUser,
+      });
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ sucess: false, message: "cannot update your information" });
     }
-    res.json({ sucess: true, message: "excellent progess", updatedUser });
-  } catch (err) {
-    return res
-      .status(400)
-      .json({ sucess: false, message: "cannot update your information" });
   }
-});
+);
 
 router.get("/:id", verifyToken, async (req, res) => {
   try {

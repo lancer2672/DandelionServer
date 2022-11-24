@@ -24,7 +24,7 @@ router.post("/login", async (req, res) => {
           // error while comparing
           res
             .status(502)
-            .json({ message: "error while checking user password" });
+            .json({ message: "error while checking user's password" });
         } else if (compareRes) {
           // password match
           const token = jwt.sign(
@@ -32,8 +32,6 @@ router.post("/login", async (req, res) => {
             process.env.ACCESS_TOKEN_SECRET,
             { expiresIn: "1h" }
           );
-
-          // const token = jwt.sign({ userId: existUser.id }, process.env.ACCESS_TOKEN_SECRET);
           res
             .status(200)
             .json({ message: "user logged in", token: token, user: existUser });
@@ -76,6 +74,9 @@ router.post("/register", async (req, res) => {
           password: passwordHash,
           email,
           avatar: {
+            data: "",
+          },
+          wallPaper: {
             data: "",
           },
           nickname: username,

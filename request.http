@@ -13,14 +13,14 @@ POST  http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "lancer1",
-    "password": "123456"
+    "username": "b",
+    "password": "b"
 }
 
 ###
-POST  http://localhost:3000/post/create
+PUT  http://localhost:3000/user/637c78cd42eabceb7883dad6
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzYwZDNhOWMyOGRlZGVkNGZjMWU5MDUiLCJpYXQiOjE2NjcyOTM4NzcsImV4cCI6MTY2NzI5NzQ3N30.r9w27mBBcZGMwDo9B1oAzJ2qkO2dVeOXgFfA9pWT4XQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MzdjNzhjZDQyZWFiY2ViNzg4M2RhZDYiLCJpYXQiOjE2NjkzMDY1OTQsImV4cCI6MTY2OTMxMDE5NH0.auIKo__RNJK9AJR54VLg-fUgp0wa1ddOtlkgDdAgCGQ
 
 {
     "description": "day la description 2",
