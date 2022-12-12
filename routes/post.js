@@ -48,20 +48,19 @@ router.put("/:id", verifyToken, async (req, res) => {
     }
     if (react) {
       const post = await Post.findById(req.params.id);
-      var isExisted = false;
+      var isReacted = false;
       for (let i = 0; i < post.likes.length; i++) {
         if (post.likes[i].userId == req.userId) {
-          isExisted = true;
+          isReacted = true;
         }
       }
       //Not found
-      if (!isExisted) {
+      if (!isReacted) {
         post.likes.push({ userId: req.userId });
       } else {
         post.likes = post.likes.filter((item) => {
           return item.userId != req.userId;
         });
-        console.log(post.likes);
       }
       await post.save();
     }
@@ -94,18 +93,15 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
-  const deletedPost = await Post.findById(req.params.id);
-  if (deletedPost.user.id == req.userId) {
-    await Post.deleteOne({ _id: req.params.id })
-      .then(() => {
-        res.json({ sucess: true, message: "excellent progess" });
-      })
-      .catch((error) => {
-        res
-          .status(400)
-          .json({ sucess: false, message: "cannot delete this post!" });
-      });
-  }
+  await Post.deleteOne({ _id: req.params.id })
+    .then(() => {
+      res.json({ sucess: true, message: "excellent progess" });
+    })
+    .catch((error) => {
+      res
+        .status(400)
+        .json({ sucess: false, message: "cannot delete this post!" });
+    });
 });
 
 router.post(
