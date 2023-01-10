@@ -18,7 +18,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-router.get("/", verifyToken, (req, res) => {
+router.get("/", (req, res) => {
+  console.log("get posts:");
   Post.find({})
     .then((posts) => {
       // TODO: xử lý việc tìm đúng chưa (có post nhưng trả về rỗng)
@@ -30,6 +31,39 @@ router.get("/", verifyToken, (req, res) => {
     })
     .catch((err) => {
       res.status(400).json({ success: false, message: "cannot get all posts" });
+    });
+});
+
+router.put("/react/:id", verifyToken, (req, res) => {
+  Post.findById(req.params.id)
+    .then((post) => {
+      let isReacted = post.likes.filter((item) => {
+        return item.userId == req.userId;
+      });
+      if (isReacted.length == 0) {
+        post.likes.push({ userId: req.userId });
+      } else {
+        post.likes = post.likes.filter((item) => {
+          return item.userId != req.userId;
+        });
+      }
+      post
+        .save()
+        .then(() => {
+          return res.json({ sucess: true, message: "excellent progess" });
+        })
+        .catch((err) => {
+          return res.status(401).json({
+            sucess: false,
+            message: "failed",
+          });
+        });
+    })
+    .catch((err) => {
+      return res.status(401).json({
+        sucess: false,
+        message: "failed",
+      });
     });
 });
 
@@ -46,24 +80,7 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (des) {
       updatedPost.description = des;
     }
-    if (react) {
-      const post = await Post.findById(req.params.id);
-      var isReacted = false;
-      for (let i = 0; i < post.likes.length; i++) {
-        if (post.likes[i].userId == req.userId) {
-          isReacted = true;
-        }
-      }
-      //Not found
-      if (!isReacted) {
-        post.likes.push({ userId: req.userId });
-      } else {
-        post.likes = post.likes.filter((item) => {
-          return item.userId != req.userId;
-        });
-      }
-      await post.save();
-    }
+
     //check if user comment
     if (content) {
       const post = await Post.findById(req.params.id);
@@ -93,15 +110,14 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
-  await Post.deleteOne({ _id: req.params.id })
-    .then(() => {
-      res.json({ sucess: true, message: "excellent progess" });
-    })
-    .catch((error) => {
-      res
-        .status(400)
-        .json({ sucess: false, message: "cannot delete this post!" });
-    });
+  try {
+    await Post.deleteOne({ _id: req.params.id });
+    return res.json({ sucess: true, message: "excellent progess" });
+  } catch (err) {
+    return res
+      .status(400)
+      .json({ sucess: false, message: "cannot delete this post!" });
+  }
 });
 
 router.post(
