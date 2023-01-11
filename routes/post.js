@@ -67,47 +67,74 @@ router.put("/react/:id", verifyToken, (req, res) => {
     });
 });
 
-router.put("/:id", verifyToken, async (req, res) => {
-  const { des, react, content } = req.body;
-  const user = await User.findById(req.userId);
-  const newComment = {
-    content,
-    userId: req.userId,
-    creatorName: user.nickname,
-  };
-  try {
-    let updatedPost = {};
-    if (des) {
-      updatedPost.description = des;
-    }
-
-    //check if user comment
-    if (content) {
-      const post = await Post.findById(req.params.id);
+router.put("/comment/:id", verifyToken, (req, res) => {
+  const user = User.findById(req.userId);
+  Post.findById(req.params.id)
+    .then((post) => {
+      const newComment = {
+        content: req.body.content,
+        userId: req.userId,
+        creatorName: user.nickname,
+      };
       post.comments.push(newComment);
-      await post.save();
-    }
-
-    updatedPost = await Post.findOneAndUpdate(
-      { id: req.params.id },
-      updatedPost,
-      {
-        new: true,
-      }
-    );
-
-    if (!updatedPost) {
+      post
+        .save()
+        .then(() => {
+          return res.json({ sucess: true, message: "excellent progess" });
+        })
+        .catch((err) => {
+          return res.status(401).json({
+            sucess: false,
+            message: "failed",
+          });
+        });
+    })
+    .catch((err) => {
       return res.status(401).json({
         sucess: false,
-        message: "You are not authorized or post not found ",
+        message: "failed",
       });
-    }
-    res.json({ sucess: true, message: "excellent progess", updatedPost });
-  } catch (err) {
-    console.log(err);
-    return res.status(400).json({ sucess: false, message: "Error!" });
-  }
+    });
 });
+
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("updateImage"),
+  async (req, res) => {
+    const { description } = req.body;
+    try {
+      let updatedPost = {
+        image: {},
+      };
+      if (description) {
+        updatedPost.description = description;
+      }
+      if (req.file) {
+        updatedPost.image.data = fs.readFileSync(
+          `uploads/${req.file.filename}`
+        );
+      }
+      updatedPost = await Post.findOneAndUpdate(
+        { id: req.params.id },
+        updatedPost,
+        {
+          new: true,
+        }
+      );
+      if (!updatedPost) {
+        return res.status(401).json({
+          sucess: false,
+          message: "You are not authorized or post not found ",
+        });
+      }
+      res.json({ sucess: true, message: "excellent progess", updatedPost });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).json({ sucess: false, message: "Error!" });
+    }
+  }
+);
 
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
