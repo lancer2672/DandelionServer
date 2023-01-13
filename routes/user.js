@@ -68,19 +68,16 @@ router.put(
   }
 );
 
-router.get("/:id", verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(401).json({
-        sucess: false,
-        message: "cannot find user",
-      });
-    }
-    res.json({ sucess: true, message: "get user successfully", user });
-  } catch (err) {
-    return res.status(400).json({ sucess: false, message: "cannot get user" });
-  }
+router.get("/:id", verifyToken, (req, res) => {
+  User.findById(req.params.id)
+    .then((user) => {
+      res.json({ sucess: true, message: "get user successfully", user });
+    })
+    .catch((err) => {
+      return res
+        .status(400)
+        .json({ sucess: false, message: "cannot get user" });
+    });
 });
 
 module.exports = router;

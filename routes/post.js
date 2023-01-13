@@ -19,7 +19,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.get("/", (req, res) => {
-  console.log("get posts:");
   Post.find({})
     .then((posts) => {
       // TODO: xử lý việc tìm đúng chưa (có post nhưng trả về rỗng)
@@ -80,7 +79,11 @@ router.put("/comment/:id", verifyToken, (req, res) => {
       post
         .save()
         .then(() => {
-          return res.json({ sucess: true, message: "excellent progess" });
+          return res.json({
+            sucess: true,
+            message: "excellent progess",
+            updatedPost: post,
+          });
         })
         .catch((err) => {
           return res.status(401).json({
@@ -147,37 +150,33 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
-router.post(
-  "/create",
-  verifyToken,
-  upload.single("postImage"),
-  async (req, res) => {
-    const { description } = req.body;
-    const user = await User.findById(req.userId);
-    const newPost = new Post({
-      description: description || " ",
-      user: req.userId,
-      creatorName: user.nickname,
-      comments: [],
-      likes: [],
-    });
-    //nếu có kèm ảnh
-    if (req.file) {
-      newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
-    }
-    newPost
-      .save()
-      .then(() => {
-        res.json({
-          success: true,
-          message: "create post successfully",
-          newPost,
-        });
-      })
-      .catch((err) => {
-        res.status(400).json({ success: false, message: "create post failed" });
+router.post("/create", verifyToken, upload.single("postImage"), (req, res) => {
+  const { description } = req.body;
+  User.findById(req.userId)
+    .then((user) => {
+      const newPost = new Post({
+        description: description || " ",
+        user: req.userId,
+        creatorName: user.nickname,
+        comments: [],
+        likes: [],
       });
-  }
-);
+      //nếu có kèm ảnh
+      if (req.file) {
+        newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
+      }
+      return newPost.save();
+    })
+    .then((newPost) => {
+      res.json({
+        success: true,
+        message: "create post successfully",
+        newPost,
+      });
+    })
+    .catch((err) => {
+      res.status(400).json({ success: false, message: "create post failed" });
+    });
+});
 
 module.exports = router;
