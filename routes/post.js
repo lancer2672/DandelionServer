@@ -19,13 +19,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.get("/", (req, res) => {
+  console.log("get posts");
   Post.find({})
     .then((posts) => {
-      // TODO: xử lý việc tìm đúng chưa (có post nhưng trả về rỗng)
       res.json({
         success: true,
-        message: "got posts",
-        posts,
+        message: "success",
+        posts: posts.reverse(),
       });
     })
     .catch((err) => {
@@ -65,7 +65,7 @@ router.put("/react/:id", verifyToken, (req, res) => {
       });
     });
 });
-
+router.delete("/comment/:id", verifyToken, (req, res) => {});
 router.put("/comment/:id", verifyToken, (req, res) => {
   const user = User.findById(req.userId);
   Post.findById(req.params.id)
