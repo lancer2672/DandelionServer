@@ -28,6 +28,15 @@ const UserSchema = new Schema(
       data: Buffer,
       contentType: String,
     },
+    friends: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "users",
+        },
+        createdAt: String,
+      },
+    ],
   },
   { timestamps: true }
 );

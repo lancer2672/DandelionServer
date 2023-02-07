@@ -49,13 +49,13 @@ router.put(
       });
       if (!result) {
         return res.status(401).json({
-          sucess: false,
+          success: false,
           message: "You are not authorized or post not found ",
         });
       }
 
       res.json({
-        sucess: true,
+        success: true,
         message: "excellent progess",
         user: result,
         updatedUser,
@@ -63,20 +63,34 @@ router.put(
     } catch (err) {
       return res
         .status(400)
-        .json({ sucess: false, message: "cannot update your information" });
+        .json({ success: false, message: "cannot update your information" });
     }
   }
 );
+router.get("/search", verifyToken, (req, res) => {
+  const keyword = req.query.q;
+  User.find({ username: new RegExp(keyword, "i") }, function (err, users) {
+    if (err)
+      return res
+        .status(400)
+        .json({ sucess: false, message: "cannot get users" });
+    return res.json({ sucess: true, message: "get users successfully", users });
+  });
+});
 
 router.get("/:id", verifyToken, (req, res) => {
   User.findById(req.params.id)
     .then((user) => {
-      res.json({ sucess: true, message: "get user successfully", user });
+      return res.json({
+        success: true,
+        message: "get user successfully",
+        user,
+      });
     })
     .catch((err) => {
       return res
         .status(400)
-        .json({ sucess: false, message: "cannot get user" });
+        .json({ success: false, message: "cannot get user" });
     });
 });
 

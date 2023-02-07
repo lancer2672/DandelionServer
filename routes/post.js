@@ -19,7 +19,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.get("/", (req, res) => {
-  console.log("get posts");
   Post.find({})
     .then((posts) => {
       res.json({
@@ -65,7 +64,30 @@ router.put("/react/:id", verifyToken, (req, res) => {
       });
     });
 });
-router.delete("/comment/:id", verifyToken, (req, res) => {});
+router.delete("/comment/:id", verifyToken, (req, res) => {
+  Post.findById(req.params.id)
+    .then((post) => {
+      const commentId = req.body.commentId;
+      const newComments = post.comments.filter((comment) => {
+        return comment._id != commentId;
+      });
+      post.comments = newComments;
+      return post.save();
+    })
+    .then((post) => {
+      return res.json({
+        sucess: true,
+        message: "success",
+        updatedComments: post.comments,
+      });
+    })
+    .catch((err) => {
+      return res.status(401).json({
+        sucess: false,
+        message: "failed",
+      });
+    });
+});
 router.put("/comment/:id", verifyToken, (req, res) => {
   const user = User.findById(req.userId);
   Post.findById(req.params.id)
