@@ -1,8 +1,12 @@
 // import { builtinModules } from "module";
 const express = require("express");
-require("dotenv").config();
+const app = express();
+const server = require("http").Server(app);
+const socketIO = require("socket.io")(server);
 const mongoose = require("mongoose");
 const cors = require("cors");
+
+require("dotenv").config();
 
 const mainRoutes = require("./routes/mainRoutes");
 function connectDB() {
@@ -17,10 +21,28 @@ function connectDB() {
 }
 
 connectDB();
-const app = express();
+
 app.use(express.json());
 app.use(cors());
-
 app.use("/", mainRoutes);
 
-app.listen(process.env.PORT, () => console.log(`server started`));
+//for chatting feature
+const generateID = () => Math.random().toString(36).substring(2, 10);
+let chatChannels = [
+  {
+    _id: 1,
+    roomName: "RoomName",
+    messages: [],
+  },
+];
+socketIO.on("connection", (socket) => {
+  console.log("a user just connected", socket.id);
+  socket.on("create-channel", (roomName) => {
+    console.log("creating channel", roomName);
+  });
+  socket.on("send-message", (newMessage) => {
+    console.log("new message", newMessage);
+  });
+  socket.emit("get-channel-list", chatChannels);
+});
+server.listen(process.env.PORT, () => console.log(`server started`));

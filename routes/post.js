@@ -101,21 +101,21 @@ router.put("/comment/:id", verifyToken, (req, res) => {
       post
         .save()
         .then(() => {
-          return res.json({
+          res.json({
             sucess: true,
             message: "excellent progess",
             updatedPost: post,
           });
         })
         .catch((err) => {
-          return res.status(401).json({
+          res.status(401).json({
             sucess: false,
             message: "failed",
           });
         });
     })
     .catch((err) => {
-      return res.status(401).json({
+      res.status(401).json({
         sucess: false,
         message: "failed",
       });

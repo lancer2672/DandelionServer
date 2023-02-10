@@ -3,6 +3,7 @@ const User = require("../models/users");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
+const Channel = require("../models/channel");
 
 router.post("/login", async (req, res) => {
   console.log("login");
@@ -48,6 +49,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
+const CreateChatChannels = (newUser, existedUsers) => {
+  console.log("existedUsers", existedUsers.length);
+  let channels = [];
+  for (let i = 0; i < existedUsers.length; i++) {
+    channels.unshift({
+      channelName: "",
+      usersId: [newUser._id, existedUsers[i]._id],
+      messages: [],
+    });
+  }
+  Channel.insertMany(channels, (err) => console.log(err));
+};
+
 router.post("/register", async (req, res) => {
   const { username, password, email } = req.body;
 
@@ -68,7 +82,7 @@ router.post("/register", async (req, res) => {
       if (err) {
         return res
           .status(500)
-          .json({ success: "false", message: "couldnt hash the password" });
+          .json({ success: "false", message: "couldn't harsh the password" });
       } else if (passwordHash) {
         const newUser = new User({
           username,
@@ -84,6 +98,13 @@ router.post("/register", async (req, res) => {
         });
         try {
           await newUser.save();
+          User.find({}, (error, users) => {
+            if (error) {
+              throw error;
+            } else {
+              CreateChatChannels(newUser, users);
+            }
+          });
         } catch (err) {
           return res
             .status(500)
