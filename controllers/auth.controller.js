@@ -1,53 +1,7 @@
-const express = require("express");
 const User = require("../models/users");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const router = express.Router();
 const Channel = require("../models/channel");
-
-router.post("/login", async (req, res) => {
-  console.log("login");
-  const { username, password } = req.body;
-
-  if (!username) {
-    return res.status(400).json({ message: "username is missing" });
-  }
-  if (!password) {
-    return res.status(400).json({ message: "password is missing" });
-  }
-  try {
-    const existUser = await User.findOne({ username });
-
-    if (!existUser) {
-      return res.status(400).json({ message: "user do not exist" });
-    } else {
-      bcrypt.compare(password, existUser.password, (err, compareRes) => {
-        if (err) {
-          // error while comparing
-          res
-            .status(502)
-            .json({ message: "error while checking user's password" });
-        } else if (compareRes) {
-          // password match
-          const token = jwt.sign(
-            { userId: existUser.id },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "1h" }
-          );
-          res
-            .status(200)
-            .json({ message: "user logged in", token: token, user: existUser });
-        } else {
-          // password doesnt match
-          res.status(401).json({ message: "password is incorrect" });
-        }
-      });
-    }
-  } catch (err) {
-    console.log("500");
-    res.status(500).json({ message: "SERVER ERROR" });
-  }
-});
 
 const CreateChatChannels = (newUser, existedUsers) => {
   console.log("existedUsers", existedUsers.length);
@@ -62,9 +16,8 @@ const CreateChatChannels = (newUser, existedUsers) => {
   Channel.insertMany(channels, (err) => console.log(err));
 };
 
-router.post("/register", async (req, res) => {
+exports.Register = async (req, res) => {
   const { username, password, email } = req.body;
-
   if (!username) {
     return res.status(400).json({ message: "username is missing" });
   }
@@ -118,14 +71,48 @@ router.post("/register", async (req, res) => {
       }
     });
   }
-});
+};
 
-//check if user existed
-router.get("/", async (req, res) => {
-  const userId = req.userId;
-  const existUser = await User.findById(userId).select("-password");
-  if (!existUser)
-    return res.status(400).json({ success: false, message: "user not found" });
-  res.json({ success: true, user: existUser });
-});
-module.exports = router;
+exports.Login = async (req, res) => {
+  console.log("login");
+  const { username, password } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ message: "username is missing" });
+  }
+  if (!password) {
+    return res.status(400).json({ message: "password is missing" });
+  }
+  try {
+    const existUser = await User.findOne({ username });
+
+    if (!existUser) {
+      return res.status(400).json({ message: "user do not exist" });
+    } else {
+      bcrypt.compare(password, existUser.password, (err, compareRes) => {
+        if (err) {
+          // error while comparing
+          res
+            .status(502)
+            .json({ message: "error while checking user's password" });
+        } else if (compareRes) {
+          // password match
+          const token = jwt.sign(
+            { userId: existUser.id },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "1h" }
+          );
+          res
+            .status(200)
+            .json({ message: "user logged in", token: token, user: existUser });
+        } else {
+          // password doesnt match
+          res.status(401).json({ message: "password is incorrect" });
+        }
+      });
+    }
+  } catch (err) {
+    console.log("500");
+    res.status(500).json({ message: "SERVER ERROR" });
+  }
+};

@@ -1,9 +1,9 @@
 const routes = require("express").Router();
 
-const authRouter = require("./auth");
-const postRouter = require("./post");
-const userRouter = require("./user");
-const chatRouter = require("./chat");
+const authRouter = require("./auth.route");
+const postRouter = require("./post.route");
+const userRouter = require("./user.route");
+const chatRouter = require("./chat.route");
 
 routes.use("/api/auth", authRouter);
 routes.use("/post", postRouter);

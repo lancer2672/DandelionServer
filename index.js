@@ -8,7 +8,7 @@ const cors = require("cors");
 
 require("dotenv").config();
 
-const mainRoutes = require("./routes/mainRoutes");
+const mainRoute = require("./routes");
 function connectDB() {
   try {
     mongoose.connect(
@@ -24,7 +24,7 @@ connectDB();
 
 app.use(express.json());
 app.use(cors());
-app.use("/", mainRoutes);
+app.use("/", mainRoute);
 
 //for chatting feature
 const generateID = () => Math.random().toString(36).substring(2, 10);
