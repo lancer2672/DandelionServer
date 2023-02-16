@@ -82,6 +82,7 @@ exports.HandleCommentPost = (req, res) => {
         content: req.body.content,
         userId: req.userId,
         creatorName: user.nickname,
+        createdAt: new Date().toISOString(),
       };
       post.comments.push(newComment);
       post
@@ -111,17 +112,16 @@ exports.HandleCommentPost = (req, res) => {
 exports.HandleUpdatePost = async (req, res) => {
   const { description } = req.body;
   try {
-    let updatedPost = {
-      image: {},
-    };
+    let updatedPost = {};
     if (description) {
       updatedPost.description = description;
     }
     if (req.file) {
+      updatedPost.image = {};
       updatedPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
     }
     updatedPost = await Post.findOneAndUpdate(
-      { id: req.params.id },
+      { _id: req.params.id },
       updatedPost,
       {
         new: true,
