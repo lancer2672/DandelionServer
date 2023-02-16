@@ -99,8 +99,7 @@ exports.Login = async (req, res) => {
           // password match
           const token = jwt.sign(
             { userId: existUser.id },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "1h" }
+            process.env.ACCESS_TOKEN_SECRET
           );
           res
             .status(200)
