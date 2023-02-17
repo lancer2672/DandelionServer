@@ -16,6 +16,18 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    firstname: {
+      type: String,
+      required: true,
+    },
+    lastname: {
+      type: String,
+      required: true,
+    },
+    dateOfBirth: {
+      type: Date,
+      required: true,
+    },
     email: {
       type: String,
       required: true,
@@ -40,5 +52,4 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
-
 module.exports = mongoose.model("users", UserSchema);
