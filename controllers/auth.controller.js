@@ -8,8 +8,8 @@ const CreateChatChannels = (newUser, existedUsers) => {
   for (let i = 0; i < existedUsers.length; i++) {
     channels.unshift({
       channelName: `${existedUsers[i].nickname}`,
-      usersId: [newUser._id, existedUsers[i]._id],
-      messages: [],
+      membersId: [newUser._id, existedUsers[i]._id],
+      channelMessages: [],
     });
   }
   Channel.insertMany(channels, (err) => console.log(err));

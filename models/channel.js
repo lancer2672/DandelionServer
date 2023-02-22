@@ -9,7 +9,7 @@ const ChannelSchema = new Schema(
       type: String,
       required: true,
     },
-    usersId: [
+    membersId: [
       {
         type: Schema.Types.ObjectId,
         ref: "users",
@@ -19,14 +19,22 @@ const ChannelSchema = new Schema(
       data: Buffer,
       contentType: String,
     },
-    messages: [
+    channelMessages: [
       {
+        _id: Schema.Types.ObjectId,
         userId: {
           type: Schema.Types.ObjectId,
           ref: "users",
         },
-        content: String,
-        createdAt: String,
+        messageBox: [
+          {
+            _id: Schema.Types.ObjectId,
+            message: {
+              type: String,
+              createdAt: String,
+            },
+          },
+        ],
       },
     ],
   },
