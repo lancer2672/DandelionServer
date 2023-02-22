@@ -4,11 +4,10 @@ const jwt = require("jsonwebtoken");
 const Channel = require("../models/channel");
 
 const CreateChatChannels = (newUser, existedUsers) => {
-  console.log("existedUsers", existedUsers.length);
   let channels = [];
   for (let i = 0; i < existedUsers.length; i++) {
     channels.unshift({
-      channelName: "",
+      channelName: `${existedUsers[i].nickname}`,
       usersId: [newUser._id, existedUsers[i]._id],
       messages: [],
     });
@@ -17,7 +16,8 @@ const CreateChatChannels = (newUser, existedUsers) => {
 };
 
 exports.Register = async (req, res) => {
-  const { username, password, email } = req.body;
+  const { username, password, email, firstname, lastname, dateOfBirth } =
+    req.body;
   if (!username) {
     return res.status(400).json({ message: "username is missing" });
   }
@@ -47,11 +47,14 @@ exports.Register = async (req, res) => {
           wallPaper: {
             data: "",
           },
-          nickname: username,
+          lastname,
+          firstname,
+          dateOfBirth,
+          nickname: `${lastname} ${firstname}`,
         });
         try {
           await newUser.save();
-          User.find({}, (error, users) => {
+          User.find({ _id: { $ne: newUser._id } }, (error, users) => {
             if (error) {
               throw error;
             } else {
@@ -74,7 +77,6 @@ exports.Register = async (req, res) => {
 };
 
 exports.Login = async (req, res) => {
-  console.log("login");
   const { username, password } = req.body;
 
   if (!username) {
