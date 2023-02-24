@@ -5,7 +5,7 @@ const server = require("http").Server(app);
 const socketIO = require("socket.io")(server);
 const mongoose = require("mongoose");
 const cors = require("cors");
-
+const ObjectId = mongoose.Types.ObjectId;
 require("dotenv").config();
 
 const mainRoute = require("./routes");
@@ -27,22 +27,63 @@ app.use(cors());
 app.use("/", mainRoute);
 
 //for chatting feature
-const generateID = () => Math.random().toString(36).substring(2, 10);
-let chatChannels = [
-  {
-    _id: 1,
-    roomName: "RoomName",
-    messages: [],
-  },
-];
+const ChatChannel = require("./models/channel");
+let chatChannels = [];
 socketIO.on("connection", (socket) => {
   console.log("a user just connected", socket.id);
   socket.on("create-channel", (roomName) => {
     console.log("creating channel", roomName);
   });
-  socket.on("send-message", (newMessage) => {
-    console.log("new message", newMessage);
+  socket.on("join-chat-room", (channelId) => {
+    console.log("join ");
+    socket.join(channelId);
   });
-  socket.emit("get-channel-list", chatChannels);
+  socket.on("send-message", async ({ channelId, userId, newMessage }) => {
+    const chatChannels = await ChatChannel.findById(channelId);
+    const lastItem = chatChannels.channelMessages.slice(-1)[0];
+
+    //check if message of channel is empty
+    if (lastItem) {
+      //check if there is already a messageBox of user send message
+      if (lastItem.userId == userId) {
+        chatChannels.channelMessages.slice(-1)[0].messageBox.unshift({
+          _id: new ObjectId(),
+          message: newMessage,
+          createdAt: new Date(),
+        });
+      } else {
+        chatChannels.channelMessages.unshift({
+          _id: new ObjectId(),
+          userId: userId,
+          messageBox: [
+            {
+              _id: new ObjectId(),
+              message: newMessage,
+              createdAt: new Date(),
+            },
+          ],
+        });
+      }
+    } else {
+      chatChannels.channelMessages.unshift({
+        _id: new ObjectId(),
+        userId: userId,
+        messageBox: [
+          {
+            _id: new ObjectId(),
+            message: newMessage,
+            createdAt: new Date(),
+          },
+        ],
+      });
+    }
+    chatChannels.save();
+    socket.emit("updated-channels", chatChannels);
+    // socket.to(channelId).emit("updated-channels", chatChannels);
+  });
+  socket.on("login", async (userId) => {
+    const chatChannels = await ChatChannel.find({ usersId: { $in: [userId] } });
+    socket.emit("get-channels", chatChannels);
+  });
 });
 server.listen(process.env.PORT, () => console.log(`server started`));

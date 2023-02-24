@@ -15,7 +15,7 @@ exports.GetChannels = (req, res) => {
     );
 };
 
-exports.GetGroupMembers = async (req, res) => {
+exports.GetChannelMember = async (req, res) => {
   try {
     const channel = await Channel.findById(req.params.id);
     const membersId = channel.membersId;

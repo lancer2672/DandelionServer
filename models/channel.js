@@ -31,7 +31,10 @@ const ChannelSchema = new Schema(
             _id: Schema.Types.ObjectId,
             message: {
               type: String,
-              createdAt: String,
+            },
+            createdAt: {
+              type: Date,
+              default: Date.now,
             },
           },
         ],

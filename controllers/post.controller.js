@@ -82,7 +82,6 @@ exports.HandleCommentPost = (req, res) => {
         content: req.body.content,
         userId: req.userId,
         creatorName: user.nickname,
-        createdAt: new Date().toISOString(),
       };
       post.comments.push(newComment);
       post

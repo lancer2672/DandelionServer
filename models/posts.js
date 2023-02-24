@@ -39,10 +39,12 @@ const PostSchema = new Schema(
         userId: {
           type: Schema.Types.ObjectId,
           ref: "users",
-          createdAt: String,
         },
         content: String,
-        createdAt: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },
