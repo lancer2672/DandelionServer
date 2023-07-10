@@ -2,13 +2,14 @@ const fs = require("fs");
 const User = require("../models/users");
 const Post = require("../models/posts");
 
-exports.GetAllPosts = (req, res) => {
+exports.getAllPosts = (req, res) => {
   Post.find({})
+    .sort({ createdAt: -1 }) //descending
     .then((posts) => {
       res.json({
         success: true,
         message: "success",
-        posts: posts.reverse(),
+        posts: posts,
       });
     })
     .catch((err) => {
@@ -164,6 +165,8 @@ exports.HandleCreatePost = (req, res) => {
       //nếu có kèm ảnh
       if (req.file) {
         newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
+        console.log("uploads/${req.file.filename}");
+        // newPost.image = `uploads/${req.file.filename}`;
       }
       return newPost.save();
     })

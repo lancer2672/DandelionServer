@@ -1,12 +1,15 @@
 const routes = require("express").Router();
 
-const authRouter = require("./auth.route");
-const postRouter = require("./post.route");
-const userRouter = require("./user.route");
-const chatRouter = require("./chat.route");
+const authRoutes = require("./auth.route");
+const postRoutes = require("./post.route");
+const userRoutes = require("./user.route");
+const channelRoutes = require("./channel.route.js");
+const friendRequestRoutes = require("./friend-request.route");
 
-routes.use("/api/auth", authRouter);
-routes.use("/post", postRouter);
-routes.use("/user", userRouter);
-routes.use("/chat", chatRouter);
+routes.use("/api/auth", authRoutes);
+routes.use("/post", postRoutes);
+routes.use("/user", userRoutes);
+routes.use("/channel", channelRoutes);
+routes.use("/friend-requests", friendRequestRoutes);
+
 module.exports = routes;
