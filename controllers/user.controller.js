@@ -72,3 +72,20 @@ exports.getUserById = (req, res) => {
         .json({ success: false, message: "cannot get user" });
     });
 };
+
+exports.getUserById = (req, res) => {
+  User.findById(req.params.id)
+    .then((user) => {
+      return res.json({
+        success: true,
+        message: "get user successfully",
+        user,
+      });
+    })
+    .catch((err) => {
+      return res
+        .status(400)
+        .json({ success: false, message: "cannot get user" });
+    });
+};
+
