@@ -7,7 +7,7 @@ router.post(
   "/login",
   body("username").exists().withMessage("Username is missing"),
   body("password").exists().withMessage("Password is missing"),
-  AuthController.Login
+  AuthController.login
 );
 
 router.post(
@@ -15,10 +15,10 @@ router.post(
   body("username").exists().withMessage("Username is missing"),
   body("password").exists().withMessage("Password is missing"),
   body("email").exists().withMessage("Email is missing"),
-  AuthController.Register
+  AuthController.register
 );
 
-//check if user existed
+router.post("/refreshToken", AuthController.refreshToken);
 
 router.get("/", async (req, res) => {
   const userId = req.userId;

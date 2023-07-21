@@ -15,7 +15,18 @@ const CreateChatChannels = (newUser, existedUsers) => {
   }
   Channel.insertMany(channels, (err) => console.log(err));
 };
-exports.Register = async (req, res) => {
+const generateAccessToken = (userId) => {
+  return jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // Thời gian hết hạn của Access Token
+  });
+};
+
+const generateRefreshToken = (userId) => {
+  return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY, // Thời gian hết hạn của Refresh Token
+  });
+};
+exports.register = async (req, res) => {
   const { username, password, email, firstname, lastname, dateOfBirth } =
     req.body;
   const errors = validationResult(req);
@@ -26,7 +37,7 @@ exports.Register = async (req, res) => {
   }
   const existUser = await User.findOne({ username });
   if (existUser) {
-    return res.status(400).json({ message: "Username already taken" });
+    return res.status(400).json({ message: "Username is already taken" });
   }
   bcrypt.hash(password, 12, async (err, passwordHash) => {
     if (err) {
@@ -65,14 +76,14 @@ exports.Register = async (req, res) => {
       }
       return res.json({
         success: "true",
-        message: "Register successfully",
+        message: "Registered successfully",
         data: { user: newUser },
       });
     }
   });
 };
 
-exports.Login = async (req, res) => {
+exports.login = async (req, res) => {
   const { username, password } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -94,17 +105,15 @@ exports.Login = async (req, res) => {
             .json({ message: "Error while checking user's password" });
         } else if (compareRes) {
           // password match
-          const token = jwt.sign(
-            { userId: existUser.id },
-            process.env.ACCESS_TOKEN_SECRET
-          );
+          const accessToken = generateAccessToken(existUser._id);
+          const refreshToken = generateRefreshToken(existUser._id);
           res.status(200).json({
-            message: "User logged in",
-            data: { token: token, user: existUser },
+            message: "User logged in successfully",
+            data: { token: accessToken, refreshToken, user: existUser },
           });
         } else {
           // password doesn't match
-          res.status(401).json({ message: "Password is incorrect" });
+          res.status(401).json({ message: "Incorrect password" });
         }
       });
     }
@@ -112,4 +121,21 @@ exports.Login = async (req, res) => {
     console.log("500");
     res.status(500).json({ message: "SERVER ERROR" });
   }
+};
+
+// Controller cho việc refresh token
+exports.refreshToken = (req, res) => {
+  const refreshToken = req.body.refreshToken;
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const userId = decoded.userId;
+    const newAccessToken = generateAccessToken(userId);
+    console.log("newtoken", newAccessToken);
+    res.status(200).json({ message: "success", accessToken: newAccessToken });
+  });
 };

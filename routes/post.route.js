@@ -12,8 +12,18 @@ router.put("/react/:id", verifyToken, PostController.HandleReactPost);
 router.delete("/comment/:id", verifyToken, PostController.HandleDeleteComment);
 router.put("/comment/:id", verifyToken, PostController.HandleCommentPost);
 
-router.put("/:id", verifyToken, upload, PostController.HandleUpdatePost);
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("postImage"),
+  PostController.HandleUpdatePost
+);
 router.delete("/:id", verifyToken, PostController.HandleDeletePost);
-router.post("/create", verifyToken, upload, PostController.HandleCreatePost);
+router.post(
+  "/create",
+  verifyToken,
+  upload.single("postImage"),
+  PostController.HandleCreatePost
+);
 
 module.exports = router;

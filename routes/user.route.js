@@ -5,7 +5,12 @@ const upload = require("../middleware/upload");
 
 const router = express.Router();
 
-router.put("/:id", verifyToken, upload, UserController.updateUser);
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("userImage"),
+  UserController.updateUser
+);
 router.get("/search", verifyToken, UserController.searchUsers);
 router.get("/:id", verifyToken, UserController.getUserById);
 // router.post("/create", verifyToken, UserController.createUser);
