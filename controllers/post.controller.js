@@ -1,115 +1,86 @@
 const fs = require("fs");
 const User = require("../models/users");
 const Post = require("../models/posts");
-
-exports.getAllPosts = (req, res) => {
-  Post.find({})
-    .sort({ createdAt: -1 }) //descending
-    .then((posts) => {
-      res.json({
-        success: true,
-        message: "success",
-        posts: posts,
-      });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: "cannot get all posts" });
+exports.getAllPosts = async (req, res) => {
+  try {
+    const posts = await Post.find({}).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      message: "success",
+      data: { posts: posts },
     });
+  } catch (err) {
+    res.status(400).json({ success: false, message: "cannot get all posts" });
+  }
 };
 
-exports.HandleReactPost = (req, res) => {
-  Post.findById(req.params.id)
-    .then((post) => {
-      let isReacted = post.likes.filter((item) => {
-        return item.userId == req.userId;
-      });
-      if (isReacted.length == 0) {
-        post.likes.push({ userId: req.userId });
-      } else {
-        post.likes = post.likes.filter((item) => {
-          return item.userId != req.userId;
-        });
-      }
-      post
-        .save()
-        .then(() => {
-          return res.json({ sucess: true, message: "excellent progess" });
-        })
-        .catch((err) => {
-          return res.status(401).json({
-            sucess: false,
-            message: "failed",
-          });
-        });
-    })
-    .catch((err) => {
-      return res.status(401).json({
-        sucess: false,
-        message: "failed",
-      });
+exports.handleReactPost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    let isReacted = post.likes.filter((item) => item.userId == req.userId);
+    if (isReacted.length === 0) {
+      post.likes.push({ userId: req.userId });
+    } else {
+      post.likes = post.likes.filter((item) => item.userId != req.userId);
+    }
+    await post.save();
+    return res.json({ sucess: true, message: "success" });
+  } catch (err) {
+    return res.status(401).json({
+      sucess: false,
+      message: "failed",
     });
+  }
 };
 
-exports.HandleDeleteComment = (req, res) => {
-  Post.findById(req.params.id)
-    .then((post) => {
-      const commentId = req.body.commentId;
-      const newComments = post.comments.filter((comment) => {
-        return comment._id != commentId;
-      });
-      post.comments = newComments;
-      return post.save();
-    })
-    .then((post) => {
-      return res.json({
-        sucess: true,
-        message: "success",
-        updatedComments: post.comments,
-      });
-    })
-    .catch((err) => {
-      return res.status(401).json({
-        sucess: false,
-        message: "failed",
-      });
+exports.handleDeleteComment = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    const commentId = req.body.commentId;
+    const newComments = post.comments.filter(
+      (comment) => comment._id != commentId
+    );
+    post.comments = newComments;
+    await post.save();
+    return res.json({
+      sucess: true,
+      message: "success",
+      data: { updatedComments: post.comments },
     });
+  } catch (err) {
+    return res.status(401).json({
+      sucess: false,
+      message: "failed",
+    });
+  }
 };
 
-exports.HandleCommentPost = (req, res) => {
-  const user = User.findById(req.userId);
-  Post.findById(req.params.id)
-    .then((post) => {
-      const newComment = {
-        content: req.body.content,
-        userId: req.userId,
-        creatorName: user.nickname,
-      };
-      post.comments.push(newComment);
-      post
-        .save()
-        .then(() => {
-          res.json({
-            sucess: true,
-            message: "excellent progess",
-            updatedPost: post,
-          });
-        })
-        .catch((err) => {
-          res.status(401).json({
-            sucess: false,
-            message: "failed",
-          });
-        });
-    })
-    .catch((err) => {
-      res.status(401).json({
-        sucess: false,
-        message: "failed",
-      });
+exports.handleCommentPost = async (req, res) => {
+  console.log("req.body", req.body.content);
+  try {
+    const user = await User.findById(req.userId);
+    const post = await Post.findById(req.params.id);
+    const newComment = {
+      content: req.body.content,
+      userId: req.userId,
+      creatorName: user.nickname,
+    };
+    post.comments.push(newComment);
+    await post.save();
+    res.json({
+      sucess: true,
+      message: "success",
+      data: { updatedPost: post },
     });
+  } catch (err) {
+    res.status(401).json({
+      sucess: false,
+      message: "failed",
+    });
+  }
 };
 
-exports.HandleUpdatePost = async (req, res) => {
+exports.handleUpdatePost = async (req, res) => {
   const { description } = req.body;
   try {
     let updatedPost = {};
@@ -117,8 +88,7 @@ exports.HandleUpdatePost = async (req, res) => {
       updatedPost.description = description;
     }
     if (req.file) {
-      updatedPost.image = {};
-      updatedPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
+      updatedPost.image = req.file.path;
     }
     updatedPost = await Post.findOneAndUpdate(
       { _id: req.params.id },
@@ -133,51 +103,49 @@ exports.HandleUpdatePost = async (req, res) => {
         message: "You are not authorized or post not found ",
       });
     }
-    res.json({ sucess: true, message: "excellent progess", updatedPost });
+    res.json({
+      sucess: true,
+      message: "success",
+      data: { updatedPost },
+    });
   } catch (err) {
     console.log(err);
     return res.status(400).json({ sucess: false, message: "Error!" });
   }
 };
-
-exports.HandleDeletePost = async (req, res) => {
+exports.handleDeletePost = async (req, res) => {
   try {
     await Post.deleteOne({ _id: req.params.id });
-    return res.json({ sucess: true, message: "excellent progess" });
+    return res.json({ success: true, message: "excellent progress" });
   } catch (err) {
     return res
       .status(400)
-      .json({ sucess: false, message: "cannot delete this post!" });
+      .json({ success: false, message: "cannot delete this post!" });
   }
 };
 
-exports.HandleCreatePost = (req, res) => {
+exports.handleCreatePost = async (req, res) => {
   const { description } = req.body;
-  User.findById(req.userId)
-    .then((user) => {
-      const newPost = new Post({
-        description: description || " ",
-        user: req.userId,
-        creatorName: user.nickname,
-        comments: [],
-        likes: [],
-      });
-      //nếu có kèm ảnh
-      if (req.file) {
-        newPost.image.data = fs.readFileSync(`uploads/${req.file.filename}`);
-        console.log("uploads/${req.file.filename}");
-        // newPost.image = `uploads/${req.file.filename}`;
-      }
-      return newPost.save();
-    })
-    .then((newPost) => {
-      res.json({
-        success: true,
-        message: "create post successfully",
-        newPost,
-      });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: "create post failed" });
+  try {
+    const user = await User.findById(req.userId);
+    const newPost = new Post({
+      description: description || " ",
+      user: req.userId,
+      creatorName: user.nickname,
+      comments: [],
+      likes: [],
     });
+    // Post image
+    if (req.file) {
+      newPost.image = req.file.path;
+    }
+    const savedPost = await newPost.save();
+    res.json({
+      success: true,
+      message: "create post successfully",
+      data: { newPost: savedPost },
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: "create post failed" });
+  }
 };

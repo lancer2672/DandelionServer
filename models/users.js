@@ -33,13 +33,9 @@ const UserSchema = new Schema(
       required: true,
     },
     avatar: {
-      data: Buffer,
-      contentType: String,
+      type: String,
     },
-    wallPaper: {
-      data: Buffer,
-      contentType: String,
-    },
+
     friends: [
       {
         userId: {

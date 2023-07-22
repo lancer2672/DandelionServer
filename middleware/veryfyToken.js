@@ -13,7 +13,6 @@ const verifyToken = (req, res, next) => {
     req.userId = decoded.userId;
     next();
   } catch (err) {
-    console.log("Error when verifyToken", err);
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({ success: false, message: "Token expired" });
     }

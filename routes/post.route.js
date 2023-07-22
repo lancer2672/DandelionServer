@@ -8,22 +8,22 @@ const PostController = require("../controllers/post.controller");
 
 router.get("/", verifyToken, PostController.getAllPosts);
 
-router.put("/react/:id", verifyToken, PostController.HandleReactPost);
-router.delete("/comment/:id", verifyToken, PostController.HandleDeleteComment);
-router.put("/comment/:id", verifyToken, PostController.HandleCommentPost);
+router.put("/react/:id", verifyToken, PostController.handleReactPost);
+router.delete("/comment/:id", verifyToken, PostController.handleDeleteComment);
+router.put("/comment/:id", verifyToken, PostController.handleCommentPost);
 
 router.put(
   "/:id",
   verifyToken,
-  upload.single("postImage"),
-  PostController.HandleUpdatePost
+  upload.single("updateImage"),
+  PostController.handleUpdatePost
 );
-router.delete("/:id", verifyToken, PostController.HandleDeletePost);
+router.delete("/:id", verifyToken, PostController.handleDeletePost);
 router.post(
   "/create",
   verifyToken,
   upload.single("postImage"),
-  PostController.HandleCreatePost
+  PostController.handleCreatePost
 );
 
 module.exports = router;

@@ -8,10 +8,12 @@ require("dotenv").config();
 const mainRoute = require("./routes");
 const connectDB = require("./db");
 const setupSocketIO = require("./socket");
+const path = require("path");
 
 connectDB();
 app.use(express.json());
 app.use(cors());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/", mainRoute);
 
 setupSocketIO(socketIO);

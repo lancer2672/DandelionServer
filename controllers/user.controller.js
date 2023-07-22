@@ -8,20 +8,9 @@ exports.updateUser = async (req, res) => {
       nickname: req.body.nickname || user.nickname,
       email: req.body.email || user.email,
       avatar: user.avatar,
-      wallPaper: user.wallPaper,
     };
-
-    console.log("req.file.filename", req.file.filename);
     if (req.file) {
-      if (req.body.isWallpaper === "false") {
-        userToUpdate.avatar.data = fs.readFileSync(
-          `uploads/${req.file.filename}`
-        );
-      } else {
-        userToUpdate.wallPaper.data = fs.readFileSync(
-          `uploads/${req.file.filename}`
-        );
-      }
+      userToUpdate.avatar = req.file.path;
     }
 
     const updatedUser = await User.findOneAndUpdate(

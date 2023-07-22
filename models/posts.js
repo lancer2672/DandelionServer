@@ -5,20 +5,17 @@ const Schema = mongoose.Schema;
 
 const PostSchema = new Schema(
   {
-    // title: {
-    //     type:String,
-    //     required: true
-    // },
     creatorName: {
       type: String,
       required: true,
     },
     description: {
       type: String,
+      default: null,
     },
     image: {
-      data: Buffer,
-      contentType: String,
+      type: String,
+      default: null,
     },
     user: {
       type: Schema.Types.ObjectId,

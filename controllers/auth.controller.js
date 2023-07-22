@@ -49,12 +49,7 @@ exports.register = async (req, res) => {
         username,
         password: passwordHash,
         email,
-        avatar: {
-          data: "",
-        },
-        wallPaper: {
-          data: "",
-        },
+        avatar: null,
         lastname,
         firstname,
         dateOfBirth,
@@ -107,6 +102,7 @@ exports.login = async (req, res) => {
           // password match
           const accessToken = generateAccessToken(existUser._id);
           const refreshToken = generateRefreshToken(existUser._id);
+          delete existUser.password;
           res.status(200).json({
             message: "User logged in successfully",
             data: { token: accessToken, refreshToken, user: existUser },
@@ -123,7 +119,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// Controller cho việc refresh token
 exports.refreshToken = (req, res) => {
   const refreshToken = req.body.refreshToken;
   if (!refreshToken) {
@@ -135,7 +130,6 @@ exports.refreshToken = (req, res) => {
     }
     const userId = decoded.userId;
     const newAccessToken = generateAccessToken(userId);
-    console.log("newtoken", newAccessToken);
     res.status(200).json({ message: "success", accessToken: newAccessToken });
   });
 };
