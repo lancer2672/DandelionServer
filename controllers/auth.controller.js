@@ -1,29 +1,17 @@
 const User = require("../models/users");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const Channel = require("../models/channel");
 const { validationResult } = require("express-validator");
 
-const CreateChatChannels = (newUser, existedUsers) => {
-  let channels = [];
-  for (let i = 0; i < existedUsers.length; i++) {
-    channels.unshift({
-      channelName: `${existedUsers[i].nickname}`,
-      membersId: [newUser._id, existedUsers[i]._id],
-      channelMessages: [],
-    });
-  }
-  Channel.insertMany(channels, (err) => console.log(err));
-};
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // Thời gian hết hạn của Access Token
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
   });
 };
 
 const generateRefreshToken = (userId) => {
   return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRY, // Thời gian hết hạn của Refresh Token
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
   });
 };
 exports.register = async (req, res) => {
@@ -57,13 +45,6 @@ exports.register = async (req, res) => {
       });
       try {
         await newUser.save();
-        User.find({ _id: { $ne: newUser._id } }, (error, users) => {
-          if (error) {
-            throw error;
-          } else {
-            CreateChatChannels(newUser, users);
-          }
-        });
       } catch (err) {
         return res
           .status(500)

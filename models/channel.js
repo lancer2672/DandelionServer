@@ -21,23 +21,22 @@ const ChannelSchema = new Schema(
     },
     channelMessages: [
       {
-        _id: Schema.Types.ObjectId,
         userId: {
           type: Schema.Types.ObjectId,
           ref: "users",
         },
-        messageBox: [
-          {
-            _id: Schema.Types.ObjectId,
-            message: {
-              type: String,
-            },
-            createdAt: {
-              type: Date,
-              default: Date.now,
-            },
-          },
-        ],
+        message: {
+          type: String,
+          default: null,
+        },
+        imageUrl: {
+          type: String,
+          default: null,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },

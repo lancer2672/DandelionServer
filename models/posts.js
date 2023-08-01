@@ -5,10 +5,6 @@ const Schema = mongoose.Schema;
 
 const PostSchema = new Schema(
   {
-    creatorName: {
-      type: String,
-      required: true,
-    },
     description: {
       type: String,
       default: null,
@@ -32,7 +28,6 @@ const PostSchema = new Schema(
     ],
     comments: [
       {
-        creatorName: String,
         userId: {
           type: Schema.Types.ObjectId,
           ref: "users",

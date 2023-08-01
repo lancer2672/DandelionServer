@@ -4,9 +4,13 @@ const ChannelController = require("../controllers/channel.controller");
 const verifyToken = require("../middleware/veryfyToken");
 
 router.get("/", verifyToken, ChannelController.getChannels);
-router.get("/:id/members", verifyToken, ChannelController.GetChannelMember);
 router.get(
-  "/:channelId/messages",
+  "/members/:channelId",
+  verifyToken,
+  ChannelController.GetChannelMember
+);
+router.get(
+  "/messages/:channelId",
   verifyToken,
   ChannelController.getRecentMessages
 );

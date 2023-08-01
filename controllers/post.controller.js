@@ -13,7 +13,29 @@ exports.getAllPosts = async (req, res) => {
     res.status(400).json({ success: false, message: "cannot get all posts" });
   }
 };
+exports.getPostByUserId = async (req, res) => {
+  try {
+    const userId = req.params.userId; // Assuming you pass the userId as a route parameter
+    const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
 
+    if (posts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No posts found for the specified user.",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Success",
+      data: { posts: posts },
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to get user posts." });
+  }
+};
 exports.handleReactPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -63,7 +85,6 @@ exports.handleCommentPost = async (req, res) => {
     const newComment = {
       content: req.body.content,
       userId: req.userId,
-      creatorName: user.nickname,
     };
     post.comments.push(newComment);
     await post.save();
@@ -113,6 +134,7 @@ exports.handleUpdatePost = async (req, res) => {
     return res.status(400).json({ sucess: false, message: "Error!" });
   }
 };
+
 exports.handleDeletePost = async (req, res) => {
   try {
     await Post.deleteOne({ _id: req.params.id });
@@ -131,7 +153,6 @@ exports.handleCreatePost = async (req, res) => {
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
-      creatorName: user.nickname,
       comments: [],
       likes: [],
     });
