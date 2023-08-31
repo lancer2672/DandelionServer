@@ -1,5 +1,5 @@
 const fs = require("fs");
-const User = require("../models/users");
+const User = require("../models/user");
 
 exports.updateUser = async (req, res) => {
   try {
@@ -42,14 +42,29 @@ exports.updateUser = async (req, res) => {
 
 exports.searchUsers = async (req, res) => {
   try {
-    const keyword = req.query.q;
-    const users = await User.find({ username: new RegExp(keyword, "i") });
+    const { q: keyword } = req.query;
+    const users = await User.find({ nickname: new RegExp(keyword, "i") });
+
+    const mappedUser1 = users.filter((user) => {
+      //not get user of user itself
+      if (user.toObject()._id != req.userId) {
+        return user;
+      }
+    });
+    const mappedUser2 = mappedUser1.map((user) => {
+      const userObject = user.toObject();
+      if (userObject._id != req.userId) {
+        delete userObject.password;
+        return userObject;
+      }
+    });
     return res.json({
       success: true,
       message: "Users fetched successfully",
-      users,
+      data: mappedUser2,
     });
   } catch (err) {
+    console.log("err", err);
     return res
       .status(400)
       .json({ success: false, message: "Cannot get users" });
@@ -58,7 +73,7 @@ exports.searchUsers = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select("-password");
     return res.json({
       success: true,
       message: "User fetched successfully",
@@ -66,5 +81,49 @@ exports.getUserById = async (req, res) => {
     });
   } catch (err) {
     return res.status(400).json({ success: false, message: "Cannot get user" });
+  }
+};
+
+exports.saveFCMtoken = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    const { token } = req.body;
+    user.FCMtoken = token;
+    await user.save();
+    res.json({
+      success: true,
+      message: "save token success",
+    });
+  } catch (err) {
+    console.log("error when save user's FCM token", err);
+    res.json({
+      success: false,
+      message: "save token failed",
+    });
+  }
+};
+
+exports.getAllFriends = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate("friends.userId");
+    console.log("user", user);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const friends = user.friends.map((friend) => friend.userId);
+    console.log("friends", friends);
+
+    return res.json({
+      success: true,
+      message: "Friends fetched successfully",
+      data: { friends },
+    });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Cannot get friends" });
   }
 };

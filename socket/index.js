@@ -1,20 +1,42 @@
-const eventHandlers = require("./handler");
-const upload = require("../middleware/upload");
+const eventHandler = require("./handler");
 
+const onlineUsers = {};
 module.exports = (socketIO) => {
   socketIO.on("connection", (socket) => {
-    console.log("a user just connected", socket.id);
+    //to detect user's online status
+    const userId = socket.handshake.query.userId;
+    onlineUsers[userId] = true;
+    console.log("onlineUsers", onlineUsers);
+    eventHandler.handleUserOnline(userId);
+    socket.broadcast.emit("online-users", onlineUsers);
 
-    socket.on("create-channel", eventHandlers.handleCreateChannel);
-    socket.on("join-chat-room", eventHandlers.handleJoinChatRoom);
-    socket.on("send-message", ({ channelId, userId, newMessage }) =>
-      eventHandlers.handleSendMessage(socketIO, channelId, userId, newMessage)
+    socket.on("join-chatRoom", eventHandler.handleJoinChatRoom);
+    socket.on(
+      "send-message",
+      async ({ channelId, userId, newMessage }) =>
+        await eventHandler.handleSendMessage(
+          socketIO,
+          channelId,
+          userId,
+          newMessage
+        )
     );
-    socket.on("send-image", (data) =>
-      eventHandlers.handleSendImage(socketIO, data)
+    socket.on(
+      "send-image",
+      async (data) => await eventHandler.handleSendImage(socketIO, data)
     );
-    socket.on("login", eventHandlers.handleLogin);
-    socket.on("friend-request", eventHandlers.handleFriendRequest);
-    socket.on("accept-friend-request", eventHandlers.handleAcceptFriendRequest);
+    socket.on("login", eventHandler.handleLogin);
+    socket.on("send-friendRequest", (data) =>
+      eventHandler.handleFriendRequest(socketIO, data)
+    );
+    socket.on("response-friendRequest", (data) =>
+      eventHandler.handleResponseRequest(socketIO, data)
+    );
+    socket.on("disconnect", async () => {
+      delete onlineUsers[userId];
+      console.log("onlineUsers", onlineUsers);
+      await eventHandler.handleUserOffline(userId);
+      socket.broadcast.emit("offline-users", userId);
+    });
   });
 };

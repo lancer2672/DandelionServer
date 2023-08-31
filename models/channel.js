@@ -1,18 +1,16 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-//Tao model
-
 const ChannelSchema = new Schema(
   {
     channelName: {
       type: String,
       required: true,
     },
-    membersId: [
+    memberIds: [
       {
         type: Schema.Types.ObjectId,
-        ref: "users",
+        ref: "user",
       },
     ],
     images: {
@@ -23,7 +21,7 @@ const ChannelSchema = new Schema(
       {
         userId: {
           type: Schema.Types.ObjectId,
-          ref: "users",
+          ref: "user",
         },
         message: {
           type: String,

@@ -15,13 +15,13 @@ const PostSchema = new Schema(
     },
     user: {
       type: Schema.Types.ObjectId,
-      ref: "users",
+      ref: "user",
     },
     likes: [
       {
         userId: {
           type: Schema.Types.ObjectId,
-          ref: "users",
+          ref: "user",
         },
         createdAt: String,
       },
@@ -30,7 +30,7 @@ const PostSchema = new Schema(
       {
         userId: {
           type: Schema.Types.ObjectId,
-          ref: "users",
+          ref: "user",
         },
         content: String,
         createdAt: {

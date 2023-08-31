@@ -35,17 +35,28 @@ const UserSchema = new Schema(
     avatar: {
       type: String,
     },
-
+    FCMtoken: {
+      type: String,
+    },
     friends: [
       {
         userId: {
           type: Schema.Types.ObjectId,
-          ref: "users",
+          ref: "user",
         },
         createdAt: String,
       },
     ],
+    isOnline: {
+      type: Number,
+      enum: [0, 1],
+      default: 0,
+    },
+    lastOnline: {
+      type: Date,
+      default: new Date(),
+    },
   },
   { timestamps: true }
 );
-module.exports = mongoose.model("users", UserSchema);
+module.exports = mongoose.model("user", UserSchema);

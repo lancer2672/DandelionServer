@@ -1,13 +1,13 @@
 const express = require("express");
-const verifyToken = require("../middleware/veryfyToken");
+const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
 const upload = require("../middleware/upload");
 
 const PostController = require("../controllers/post.controller");
 
-router.get("/", verifyToken, PostController.getAllPosts);
-router.get("/:userId", verifyToken, PostController.getPostByUserId);
+router.get("/all", verifyToken, PostController.getAllPosts);
+router.get("/", verifyToken, PostController.getPostByUserId);
 
 router.put("/react/:id", verifyToken, PostController.handleReactPost);
 router.delete("/comment/:id", verifyToken, PostController.handleDeleteComment);

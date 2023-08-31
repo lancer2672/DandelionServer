@@ -1,5 +1,5 @@
 const fs = require("fs");
-const User = require("../models/users");
+const User = require("../models/user");
 const Post = require("../models/posts");
 exports.getAllPosts = async (req, res) => {
   try {
@@ -15,7 +15,7 @@ exports.getAllPosts = async (req, res) => {
 };
 exports.getPostByUserId = async (req, res) => {
   try {
-    const userId = req.params.userId; // Assuming you pass the userId as a route parameter
+    const userId = req.userId;
     const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
 
     if (posts.length === 0) {
@@ -80,7 +80,6 @@ exports.handleDeleteComment = async (req, res) => {
 exports.handleCommentPost = async (req, res) => {
   console.log("req.body", req.body.content);
   try {
-    const user = await User.findById(req.userId);
     const post = await Post.findById(req.params.id);
     const newComment = {
       content: req.body.content,
@@ -149,7 +148,6 @@ exports.handleDeletePost = async (req, res) => {
 exports.handleCreatePost = async (req, res) => {
   const { description } = req.body;
   try {
-    const user = await User.findById(req.userId);
     const newPost = new Post({
       description: description || " ",
       user: req.userId,

@@ -18,7 +18,7 @@ router.post(
   AuthController.register
 );
 
-router.post("/refreshToken", AuthController.refreshToken);
+router.post("/refresh-token", AuthController.refreshToken);
 
 router.get("/", async (req, res) => {
   const userId = req.userId;
