@@ -65,20 +65,23 @@ const handleJoinChannels = (socket, channelIds = []) => {
   console.log("join channelIds", channelIds);
   socket.join(channelIds);
 };
-const handleSetSeenMessages = async ({ channelId, unseenMessageIds }) => {
+const handleUserTyping = (io, data) => {
+  const { channelId, isTyping } = data;
+  console.log("join channelIds", channelIds);
+  io.to(channelId).emit();
+};
+
+const handleSetSeenMessages = async ({ channelId }) => {
   try {
     await Channel.updateOne(
-      // Specify the filter object to find the channel document with the given channelId
-      { _id: channelId, "channelMessages._id": { $in: unseenMessageIds } },
-      // Use the $set update operator to set the isSeen property of all matching channelMessages to true
-      { $set: { "channelMessages.$[elem].isSeen": true } },
-      // Use the arrayFilters option to specify which elements in the channelMessages array should be updated
-      { arrayFilters: [{ "elem._id": { $in: unseenMessageIds } }] }
+      { _id: channelId },
+      { $set: { "channelMessages.$[].isSeen": true } }
     );
-  } catch (er) {
-    console.log(er);
+  } catch (err) {
+    console.log(err);
   }
 };
+
 const handleSendMessage = async (io, data) => {
   try {
     const { channelId, senderId, newMessage } = data;
@@ -91,18 +94,24 @@ const handleSendMessage = async (io, data) => {
     };
     io.to(channelId).emit("receive-message", newMess, channelId);
     const chatChannel = await Channel.findById(channelId);
-    const sender = await User.findById(senderId);
     const receiverId = chatChannel.memberIds.find(
       (memberId) => memberId != senderId
     );
+    const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
     chatChannel.channelMessages.unshift(newMess);
-
+    chatChannel.lastUpdate = new Date();
     await chatChannel.save();
+
     await NotificationController.handleSendNotification(
       [receiver.FCMtoken],
       newMessage,
-      `${sender.nickname} đã gửi cho bạn tin nhắn`
+      `${sender.nickname} đã gửi cho bạn tin nhắn`,
+      {
+        type: "chat",
+        channelId,
+        memberIds: JSON.stringify(chatChannel.memberIds),
+      }
     );
   } catch (e) {
     console.log("Error when sending message", e);
@@ -274,4 +283,5 @@ module.exports = {
   handleSendImage,
   handleUserOffline,
   handleUserOnline,
+  handleUserTyping,
 };

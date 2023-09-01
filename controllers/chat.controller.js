@@ -5,7 +5,9 @@ const User = require("../models/user");
 exports.getChannels = async (req, res) => {
   try {
     const userId = req.userId;
-    const channels = await Channel.find({ memberIds: { $in: [userId] } });
+    const channels = await Channel.find({ memberIds: { $in: [userId] } }).sort({
+      lastUpdate: -1,
+    });
     res.json({
       success: true,
       message: "success",

@@ -4,7 +4,8 @@ const admin = require("../firebase/firebaseAdmin");
 exports.handleSendNotification = async (
   tokenList,
   message,
-  title = "Thông báo mới"
+  title = "Thông báo mới",
+  messageData
 ) => {
   await admin.messaging().sendToDevice(
     tokenList,
@@ -12,6 +13,13 @@ exports.handleSendNotification = async (
       notification: {
         title,
         body: message,
+      },
+      data: {
+        ...messageData,
+        //  ex:
+        // type: "chat",
+        // channelId: channelId,
+        // memberIds: JSON.stringify(memberIds),
       },
     },
     {

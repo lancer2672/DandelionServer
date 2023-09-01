@@ -17,6 +17,10 @@ const ChannelSchema = new Schema(
       data: Buffer,
       contentType: String,
     },
+    lastUpdate: {
+      type: Date,
+      default: Date.now,
+    },
     channelMessages: [
       {
         userId: {

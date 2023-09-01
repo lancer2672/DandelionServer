@@ -14,6 +14,9 @@ module.exports = (socketIO) => {
       eventHandler.handleJoinChannels(socket, channelIds)
     );
     socket.on("join-chatRoom", eventHandler.handleSetSeenMessages);
+    socket.on("typing", (data) =>
+      eventHandler.handleUserTyping(socketIO, data)
+    );
     socket.on("send-message", (data) =>
       eventHandler.handleSendMessage(socketIO, data)
     );
