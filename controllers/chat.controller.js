@@ -70,7 +70,10 @@ exports.getLastMessage = async (req, res) => {
   console.log("Channel", channelId);
 
   const channel = await Channel.findById(channelId);
-
+  let lastMessage = null;
+  if (channel.channelMessages.length > 0) {
+    lastMessage = channel.channelMessages[0];
+  }
   if (!channel) {
     return res
       .status(404)
@@ -79,7 +82,7 @@ exports.getLastMessage = async (req, res) => {
   res.json({
     success: true,
     data: {
-      lastMessage: channel.channelMessages[0],
+      lastMessage,
       channelId,
     },
   });

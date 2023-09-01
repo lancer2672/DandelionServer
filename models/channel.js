@@ -31,6 +31,10 @@ const ChannelSchema = new Schema(
           type: String,
           default: null,
         },
+        isSeen: {
+          type: Boolean,
+          default: false,
+        },
         createdAt: {
           type: Date,
           default: Date.now,

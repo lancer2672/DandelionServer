@@ -1,5 +1,6 @@
 node_modules/
 uploads/
+serviceKey.json
 request.http
 .env
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode

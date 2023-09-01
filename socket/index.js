@@ -10,20 +10,15 @@ module.exports = (socketIO) => {
     eventHandler.handleUserOnline(userId);
     socket.broadcast.emit("online-users", onlineUsers);
 
-    socket.on("join-chatRoom", eventHandler.handleJoinChatRoom);
-    socket.on(
-      "send-message",
-      async ({ channelId, userId, newMessage }) =>
-        await eventHandler.handleSendMessage(
-          socketIO,
-          channelId,
-          userId,
-          newMessage
-        )
+    socket.on("join-channels", (channelIds) =>
+      eventHandler.handleJoinChannels(socket, channelIds)
     );
-    socket.on(
-      "send-image",
-      async (data) => await eventHandler.handleSendImage(socketIO, data)
+    socket.on("join-chatRoom", eventHandler.handleSetSeenMessages);
+    socket.on("send-message", (data) =>
+      eventHandler.handleSendMessage(socketIO, data)
+    );
+    socket.on("send-image", (data) =>
+      eventHandler.handleSendImage(socketIO, data)
     );
     socket.on("login", eventHandler.handleLogin);
     socket.on("send-friendRequest", (data) =>
@@ -34,7 +29,6 @@ module.exports = (socketIO) => {
     );
     socket.on("disconnect", async () => {
       delete onlineUsers[userId];
-      console.log("onlineUsers", onlineUsers);
       await eventHandler.handleUserOffline(userId);
       socket.broadcast.emit("offline-users", userId);
     });
