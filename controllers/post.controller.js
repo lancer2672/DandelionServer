@@ -1,6 +1,7 @@
 const fs = require("fs");
 const User = require("../models/user");
 const Post = require("../models/posts");
+const { validationResult } = require("express-validator");
 exports.getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find({}).sort({ createdAt: -1 });
@@ -146,6 +147,12 @@ exports.handleDeletePost = async (req, res) => {
 };
 
 exports.handleCreatePost = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json({ message: "Invalid information", errors: errors.array() });
+  }
   const { description } = req.body;
   try {
     const newPost = new Post({

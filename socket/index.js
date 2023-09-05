@@ -5,7 +5,7 @@ module.exports = (socketIO) => {
   socketIO.on("connection", (socket) => {
     //to detect user's online status
     const userId = socket.handshake.query.userId;
-    onlineUsers[userId] = true;
+    onlineUsers[userId] = socket.id;
     console.log("onlineUsers", onlineUsers);
     eventHandler.handleUserOnline(userId);
     socket.broadcast.emit("online-users", onlineUsers);
@@ -25,13 +25,14 @@ module.exports = (socketIO) => {
     );
     socket.on("login", eventHandler.handleLogin);
     socket.on("send-friendRequest", (data) =>
-      eventHandler.handleFriendRequest(socketIO, data)
+      eventHandler.handleFriendRequest(socketIO, data, onlineUsers)
     );
     socket.on("response-friendRequest", (data) =>
-      eventHandler.handleResponseRequest(socketIO, data)
+      eventHandler.handleResponseRequest(socketIO, data, onlineUsers)
     );
     socket.on("disconnect", async () => {
       delete onlineUsers[userId];
+      console.log("onlineUsers disconnect", onlineUsers);
       await eventHandler.handleUserOffline(userId);
       socket.broadcast.emit("offline-users", userId);
     });

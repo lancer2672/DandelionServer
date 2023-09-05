@@ -1,6 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const Channel = require("../models/channel");
 const User = require("../models/user");
+const { validationResult } = require("express-validator");
 
 exports.getChannels = async (req, res) => {
   try {
@@ -88,4 +89,38 @@ exports.getLastMessage = async (req, res) => {
       channelId,
     },
   });
+};
+
+exports.findOrCreateChannel = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json({ message: "Invalid information", errors: errors.array() });
+  }
+  const { channelName = "", memberIds } = req.body;
+  try {
+    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
+    if (!channel) {
+      channel = new Channel({
+        channelName,
+        memberIds,
+        channelMessages: [],
+        isInWaitingList: true,
+      });
+      await channel.save();
+    }
+    res.json({
+      success: true,
+      data: {
+        channel,
+      },
+    });
+  } catch (err) {
+    console.error("Error finding or creating channel", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while finding or creating the channel",
+    });
+  }
 };

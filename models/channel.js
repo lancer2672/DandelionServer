@@ -5,7 +5,6 @@ const ChannelSchema = new Schema(
   {
     channelName: {
       type: String,
-      required: true,
     },
     memberIds: [
       {
@@ -20,6 +19,12 @@ const ChannelSchema = new Schema(
     lastUpdate: {
       type: Date,
       default: Date.now,
+    },
+
+    //If user A and B are not friend -> true
+    isInWaitingList: {
+      type: Boolean,
+      default: false,
     },
     channelMessages: [
       {

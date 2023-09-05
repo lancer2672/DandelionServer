@@ -7,20 +7,27 @@ const NotificationController = require("../controllers/notification.controller")
 
 const fs = require("fs");
 
-const createChannel = async (channelName, memberIds) => {
+const findOrCreateChannel = async (channelName, memberIds) => {
   try {
-    const channel = new Channel({
-      channelName,
-      memberIds,
-      channelMessages: [],
-    });
-    await channel.save();
-    console.log("Channel created successfully!");
+    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
+    if (!channel) {
+      channel = new Channel({
+        channelName,
+        memberIds,
+        channelMessages: [],
+      });
+      await channel.save();
+      console.log("Channel created successfully!");
+    } else {
+      channel.isInWaitingList = true;
+      await channel.save();
+    }
     return channel;
   } catch (err) {
-    console.error("Error creating channel", err);
+    console.error("Error finding or creating channel", err);
   }
 };
+
 const addFriendToFriendList = async (userIdA, userIdB) => {
   try {
     const userA = await User.findById(userIdA);
@@ -50,12 +57,12 @@ const acceptFriendRequest = async (request) => {
     request.status = "accepted";
     await request.save();
 
-    const newChannel = await createChannel("New Chat Room", [
+    const channel = await findOrCreateChannel("New Chat Room", [
       request.sender,
       request.receiver,
     ]);
 
-    return newChannel;
+    return channel;
   } catch (er) {
     console.log(er);
   }
@@ -152,7 +159,11 @@ const handleLogin = async (userId) => {
 };
 
 //Sender: A receiver: B
-const handleFriendRequest = async (io, { senderId, receiverId }) => {
+const handleFriendRequest = async (
+  io,
+  { senderId, receiverId },
+  onlineUsers
+) => {
   try {
     const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
@@ -182,10 +193,19 @@ const handleFriendRequest = async (io, { senderId, receiverId }) => {
         [sender.FCMtoken],
         `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
       );
-      io.to(senderId).emit("new-channel", newChannel);
-      io.to(receiverId).emit("new-channel", newChannel);
-      io.to(senderId).emit("new-friendStatus", "friend");
-      io.to(receiverId).emit("new-friendStatus", "friend");
+
+      io.to(onlineUsers[senderId]).emit("new-channel", newChannel);
+      io.to(onlineUsers[receiverId]).emit("new-channel", newChannel);
+
+      io.to(onlineUsers[senderId]).emit("response-friendRequest", {
+        requestId: existedRequestBtoA._id,
+        responseValue: "accept",
+      });
+      io.to(onlineUsers[receiverId]).emit("response-friendRequest", {
+        requestId: existedRequestBtoA._id,
+        responseValue: "accept",
+      });
+
       addFriendToFriendList(senderId, receiverId);
       addFriendToFriendList(receiverId, senderId);
 
@@ -196,9 +216,9 @@ const handleFriendRequest = async (io, { senderId, receiverId }) => {
         receiver: receiverId,
         status: "pending",
       });
-      io.to(senderId).emit("new-friendStatus", "sentRequest");
-      io.to(receiverId).emit("new-friendStatus", "sentRequest");
       await newRequest.save();
+      io.to(onlineUsers[senderId]).emit("send-friendRequest", "sentRequest");
+      io.to(onlineUsers[receiverId]).emit("send-friendRequest", "accept");
       await NotificationController.handleSendNotification(
         [receiver.FCMtoken],
         `${sender.nickname} đã gửi cho bạn lời mời kết bạn`
@@ -209,7 +229,11 @@ const handleFriendRequest = async (io, { senderId, receiverId }) => {
   }
 };
 
-const handleResponseRequest = async (io, { requestId, responseValue }) => {
+const handleResponseRequest = async (
+  io,
+  { requestId, responseValue },
+  onlineUsers
+) => {
   try {
     const request = await FriendRequestModel.findById(requestId);
     const sender = await User.findById(request.sender);
@@ -219,7 +243,7 @@ const handleResponseRequest = async (io, { requestId, responseValue }) => {
       return;
     }
     if (responseValue === "accept") {
-      const newChannel = await createChannel("New Chat Room", [
+      const channel = await findOrCreateChannel("New Chat Room", [
         request.sender,
         request.receiver,
       ]);
@@ -232,15 +256,28 @@ const handleResponseRequest = async (io, { requestId, responseValue }) => {
       );
       addFriendToFriendList(sender._id, receiver._id);
       addFriendToFriendList(receiver._id, sender._id);
-      io.to(request.sender).emit("new-channel", newChannel);
-      io.to(request.receiver).emit("new-channel", newChannel);
+      // io.to(request.sender).emit("new-channel", channel);
+      // io.to(request.receiver).emit("new-channel", channel);
 
-      io.to(request.sender).emit("new-friendStatus", "friend");
-      io.to(request.receiver).emit("new-friendStatus", "friend");
-
+      io.to(onlineUsers[request.sender._id]).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "accept",
+      });
+      io.to(onlineUsers[request.receiver._id]).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "accept",
+      });
       console.log("Friend request accepted and new chat room created");
     } else if (responseValue === "decline") {
       request.status = "declined";
+      io.to(onlineUsers[request.sender._id]).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "decline",
+      });
+      io.to(onlineUsers[request.receiver._id]).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "decline",
+      });
       await request.save();
       console.log("Friend request declined");
     } else {

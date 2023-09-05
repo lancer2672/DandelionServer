@@ -1,9 +1,9 @@
 const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
+const { body } = require("express-validator");
 
 const upload = require("../middleware/upload");
-
 const PostController = require("../controllers/post.controller");
 
 router.get("/all", verifyToken, PostController.getAllPosts);
@@ -23,6 +23,7 @@ router.delete("/:id", verifyToken, PostController.handleDeletePost);
 router.post(
   "/create",
   verifyToken,
+  body("description").exists().withMessage("Description is missing"),
   upload.single("postImage"),
   PostController.handleCreatePost
 );
