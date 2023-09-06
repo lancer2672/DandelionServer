@@ -3,16 +3,23 @@ const User = require("../models/user");
 
 exports.updateUser = async (req, res) => {
   try {
+    console.log("req.id", req.userId);
     const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     const userToUpdate = {
       nickname: req.body.nickname || user.nickname,
       email: req.body.email || user.email,
-      avatar: user.avatar,
+      gender: req.body.gender || user.gender,
+      phoneNumber: req.body.phoneNumber || user.phoneNumber,
+      dateOfBirth: req.body.dateOfBirth || user.dateOfBirth,
+      avatar: req.file ? req.file.path : user.avatar,
     };
-    if (req.file) {
-      userToUpdate.avatar = req.file.path;
-    }
-
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.userId },
       userToUpdate,
@@ -21,6 +28,7 @@ exports.updateUser = async (req, res) => {
       }
     );
 
+    console.log("userToUpdate", userToUpdate);
     if (!updatedUser) {
       return res.status(401).json({
         success: false,

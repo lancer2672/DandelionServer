@@ -6,7 +6,7 @@ const upload = require("../middleware/upload");
 const router = express.Router();
 
 router.put(
-  "/update/:id",
+  "/update",
   verifyToken,
   upload.single("userImage"),
   UserController.updateUser
