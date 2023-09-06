@@ -33,8 +33,6 @@ exports.GetChannelMember = async (req, res) => {
 
 exports.getChannelMessages = async (req, res) => {
   const channelId = req.params.channelId;
-  console.log("Channel", channelId);
-
   const channel = await Channel.findById(channelId);
 
   if (!channel) {
@@ -57,7 +55,6 @@ exports.getChannelMessages = async (req, res) => {
     },
     { $project: { _id: 0, channelMessages: 1 } },
   ]);
-
   res.json({
     success: true,
     message: "Get messages successfully",

@@ -13,7 +13,18 @@ module.exports = (socketIO) => {
     socket.on("join-channels", (channelIds) =>
       eventHandler.handleJoinChannels(socket, channelIds)
     );
-    socket.on("join-chatRoom", eventHandler.handleSetSeenMessages);
+    socket.on("join-channel", ({ userBId, channelId }) => {
+      const socketBId = onlineUsers[userBId];
+      return eventHandler.handleJoinChannel(
+        socketIO,
+        socket,
+        socketBId,
+        channelId
+      );
+    });
+    socket.on("join-chatRoom", ({ channelId }) => {
+      return eventHandler.handleSetSeenMessages({ socket, channelId });
+    });
     socket.on("typing", (data) =>
       eventHandler.handleUserTyping(socketIO, data)
     );

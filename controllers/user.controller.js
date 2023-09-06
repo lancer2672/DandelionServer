@@ -84,6 +84,24 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+exports.getListUser = async (req, res) => {
+  try {
+    const listIds = req.body.listIds;
+    const users = await User.find({ _id: { $in: listIds } }).select(
+      "-password"
+    );
+    return res.json({
+      success: true,
+      message: "Users fetched successfully",
+      data: { users },
+    });
+  } catch (err) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Cannot get users" });
+  }
+};
+
 exports.saveFCMtoken = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
