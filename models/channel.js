@@ -36,10 +36,11 @@ const ChannelSchema = new Schema(
           type: String,
           default: null,
         },
-        imageUrl: {
-          type: String,
-          default: null,
-        },
+        imageUrls: [
+          {
+            type: String,
+          },
+        ],
         isSeen: {
           type: Boolean,
           default: false,

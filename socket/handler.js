@@ -131,21 +131,27 @@ const handleSendMessage = async (socketIO, data) => {
   }
 };
 
-const handleSendImage = async (socketIO, { channelId, imageData, userId }) => {
+const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
   try {
-    const fileName = Date.now() + "-" + userId + ".png";
+    const imageUrls = [];
+    for (let imageData of imagesData) {
+      const fileName = Date.now() + "-" + userId + ".png";
+      const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
+      fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
+      const imageUrl = "/uploads/" + fileName;
+      imageUrls.push(imageUrl);
+    }
 
-    const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
-    fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
-    const imageUrl = "/uploads/" + fileName;
     const chatChannel = await Channel.findById(channelId);
     const newMess = {
       _id: new ObjectId(),
       userId,
-      imageUrl: imageUrl,
+      imageUrls: imageUrls,
       createdAt: new Date(),
     };
+    console.log("newMess", newMess);
     chatChannel.channelMessages.unshift(newMess);
+
     await chatChannel.save();
     socketIO.to(channelId).emit("receive-image", newMess);
 
