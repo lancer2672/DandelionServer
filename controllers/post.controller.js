@@ -154,24 +154,24 @@ exports.handleCreatePost = async (req, res) => {
       .json({ message: "Invalid information", errors: errors.array() });
   }
   const { description } = req.body;
+  console.log("called");
   try {
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
       comments: [],
       likes: [],
+      image: req.file?.path || null,
     });
-    // Post image
-    if (req.file) {
-      newPost.image = req.file.path;
-    }
     const savedPost = await newPost.save();
+    console.log("savedPost", savedPost);
     res.json({
       success: true,
       message: "create post successfully",
       data: { newPost: savedPost },
     });
   } catch (err) {
+    console.log("er", err);
     res.status(400).json({ success: false, message: "create post failed" });
   }
 };

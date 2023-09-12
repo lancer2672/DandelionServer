@@ -80,7 +80,7 @@ const handleJoinChannel = (socketIO, socket, socketBId, channelId) => {
 };
 const handleUserTyping = (socketIO, data) => {
   const { channelId, isTyping } = data;
-  socketIO.to(channelId).emit();
+  socketIO.to(channelId).emit("typing", channelId, isTyping);
 };
 
 const handleSetSeenMessages = async ({ socket, channelId }) => {
@@ -118,7 +118,7 @@ const handleSendMessage = async (socketIO, data) => {
 
     await NotificationController.handleSendNotification(
       [receiver.FCMtoken],
-      newMessage,
+      "Tin nhắn mới",
       `${sender.nickname} đã gửi cho bạn tin nhắn`,
       {
         type: "chat",
@@ -131,28 +131,39 @@ const handleSendMessage = async (socketIO, data) => {
   }
 };
 
-const handleSendImage = async (
-  socketIO,
-  { channelId, senderId, imageData }
-) => {
+const handleSendImage = async (socketIO, { channelId, imageData, userId }) => {
   try {
-    const fileName = Date.now() + "-" + senderId + ".png";
+    const fileName = Date.now() + "-" + userId + ".png";
 
     const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
     fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
-    const imageUrl = "http://192.168.153.72:3000/uploads/" + fileName;
+    const imageUrl = "/uploads/" + fileName;
     const chatChannel = await Channel.findById(channelId);
-
     const newMess = {
       _id: new ObjectId(),
-      userId: senderId,
+      userId,
       imageUrl: imageUrl,
       createdAt: new Date(),
     };
     chatChannel.channelMessages.unshift(newMess);
     await chatChannel.save();
-
     socketIO.to(channelId).emit("receive-image", newMess);
+
+    const receiverId = chatChannel.memberIds.find(
+      (memberId) => memberId != userId
+    );
+    const receiver = await User.findById(receiverId);
+    const sender = await User.findById(userId);
+    await NotificationController.handleSendNotification(
+      [receiver.FCMtoken],
+      `${sender.nickname} đã gửi cho bạn một ảnh`,
+      "Tin nhắn mới",
+      {
+        type: "chat",
+        channelId,
+        memberIds: JSON.stringify(chatChannel.memberIds),
+      }
+    );
   } catch (error) {
     console.log("Error when handling image", error);
   }

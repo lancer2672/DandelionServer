@@ -15,15 +15,10 @@ module.exports = (socketIO) => {
     );
     socket.on("join-channel", ({ userBId, channelId }) => {
       const socketBId = onlineUsers[userBId];
-      return eventHandler.handleJoinChannel(
-        socketIO,
-        socket,
-        socketBId,
-        channelId
-      );
+      eventHandler.handleJoinChannel(socketIO, socket, socketBId, channelId);
     });
     socket.on("join-chatRoom", ({ channelId }) => {
-      return eventHandler.handleSetSeenMessages({ socket, channelId });
+      eventHandler.handleSetSeenMessages({ socket, channelId });
     });
     socket.on("typing", (data) =>
       eventHandler.handleUserTyping(socketIO, data)
@@ -32,7 +27,7 @@ module.exports = (socketIO) => {
       eventHandler.handleSendMessage(socketIO, data)
     );
     socket.on("send-image", (data) =>
-      eventHandler.handleSendImage(socketIO, data)
+      eventHandler.handleSendImage(socketIO, { ...data, userId })
     );
     socket.on("login", eventHandler.handleLogin);
     socket.on("send-friendRequest", (data) =>

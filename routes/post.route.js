@@ -23,7 +23,7 @@ router.delete("/:id", verifyToken, PostController.handleDeletePost);
 router.post(
   "/create",
   verifyToken,
-  body("description").exists().withMessage("Description is missing"),
+
   upload.single("postImage"),
   PostController.handleCreatePost
 );
