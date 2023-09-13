@@ -149,7 +149,6 @@ const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
       imageUrls: imageUrls,
       createdAt: new Date(),
     };
-    console.log("newMess", newMess);
     chatChannel.channelMessages.unshift(newMess);
 
     await chatChannel.save();
