@@ -17,6 +17,10 @@ const FriendRequestSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "declined"],
       default: "pending",
     },
+    isSeen: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

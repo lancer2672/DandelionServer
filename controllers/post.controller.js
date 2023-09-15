@@ -1,6 +1,6 @@
 const fs = require("fs");
 const User = require("../models/user");
-const Post = require("../models/posts");
+const Post = require("../models/post");
 const { validationResult } = require("express-validator");
 exports.getAllPosts = async (req, res) => {
   try {
@@ -35,6 +35,27 @@ exports.getPostByUserId = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Failed to get user posts." });
+  }
+};
+
+exports.getPostById = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "No post found ",
+      });
+    }
+    res.json({
+      success: true,
+      message: "Success",
+      data: { post: post },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to get post." });
   }
 };
 exports.handleReactPost = async (req, res) => {
@@ -79,7 +100,6 @@ exports.handleDeleteComment = async (req, res) => {
 };
 
 exports.handleCommentPost = async (req, res) => {
-  console.log("req.body", req.body.content);
   try {
     const post = await Post.findById(req.params.id);
     const newComment = {

@@ -10,4 +10,5 @@ router.post(
   NotificationController.sendNotification
 );
 
+router.get("/", verifyToken, NotificationController.getAllNotifications);
 module.exports = router;

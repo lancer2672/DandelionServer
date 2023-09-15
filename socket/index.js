@@ -1,4 +1,6 @@
-const eventHandler = require("./handler");
+const chatEventHandler = require("./chatHandler");
+const postEventHandler = require("./postHandler");
+const notificationEventHandler = require("./notificationHandler");
 
 const onlineUsers = {};
 module.exports = (socketIO) => {
@@ -7,39 +9,79 @@ module.exports = (socketIO) => {
     const userId = socket.handshake.query.userId;
     onlineUsers[userId] = socket.id;
     console.log("onlineUsers", onlineUsers);
-    eventHandler.handleUserOnline(userId);
+    chatEventHandler.handleUserOnline(userId);
     socket.broadcast.emit("online-users", onlineUsers);
 
     socket.on("join-channels", (channelIds) =>
-      eventHandler.handleJoinChannels(socket, channelIds)
+      chatEventHandler.handleJoinChannels(socket, channelIds)
     );
     socket.on("join-channel", ({ userBId, channelId }) => {
       const socketBId = onlineUsers[userBId];
-      eventHandler.handleJoinChannel(socketIO, socket, socketBId, channelId);
+      chatEventHandler.handleJoinChannel(
+        socketIO,
+        socket,
+        socketBId,
+        channelId
+      );
     });
     socket.on("join-chatRoom", ({ channelId }) => {
-      eventHandler.handleSetSeenMessages({ socket, channelId });
+      chatEventHandler.handleSetSeenMessages({ socket, channelId });
     });
-    socket.on("typing", (data) =>
-      eventHandler.handleUserTyping(socketIO, data)
-    );
+    socket.on("typing", (data) => {
+      const chatFriendSocketId = onlineUsers[data.chatFriendId];
+
+      if (chatFriendSocketId) {
+        chatEventHandler.handleUserTyping(socketIO, {
+          ...data,
+          chatFriendSocketId,
+        });
+      }
+    });
     socket.on("send-message", (data) =>
-      eventHandler.handleSendMessage(socketIO, data)
+      chatEventHandler.handleSendMessage(socketIO, data)
     );
     socket.on("send-image", (data) =>
-      eventHandler.handleSendImage(socketIO, { ...data, userId })
+      chatEventHandler.handleSendImage(socketIO, { ...data, userId })
     );
-    socket.on("login", eventHandler.handleLogin);
+
+    socket.on("login", chatEventHandler.handleLogin);
     socket.on("send-friendRequest", (data) =>
-      eventHandler.handleFriendRequest(socketIO, data, onlineUsers)
+      chatEventHandler.handleFriendRequest(socketIO, data, onlineUsers)
     );
     socket.on("response-friendRequest", (data) =>
-      eventHandler.handleResponseRequest(socketIO, data, onlineUsers)
+      chatEventHandler.handleResponseRequest(socketIO, data, onlineUsers)
     );
+
+    socket.on("upload-comment", (data) => {
+      const postCreatorSocketId = onlineUsers[data.postCreatorId];
+      const commentUserSocketId = onlineUsers[data.commentUserId];
+      postEventHandler.handleUploadComment(socketIO, {
+        ...data,
+        postCreatorSocketId,
+        commentUserSocketId,
+      });
+    });
+    socket.on("react-post", (data) => {
+      const postCreatorSocketId = onlineUsers[data.postCreatorId];
+      postEventHandler.handleReactPost(socketIO, {
+        ...data,
+        postCreatorSocketId,
+        reactUserId: userId,
+      });
+    });
+    socket.on("mark-seen-notifications", (data) => {
+      const userSocketId = onlineUsers[userId];
+      notificationEventHandler.handleMarkNotificationAsSeen(
+        socketIO,
+        data,
+        userSocketId
+      );
+    });
+
     socket.on("disconnect", async () => {
       delete onlineUsers[userId];
       console.log("onlineUsers disconnect", onlineUsers);
-      await eventHandler.handleUserOffline(userId);
+      await chatEventHandler.handleUserOffline(userId);
       socket.broadcast.emit("offline-users", userId);
     });
   });

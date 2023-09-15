@@ -2,7 +2,7 @@ const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
-
+const voximplantService = require("../voximplant/services");
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
@@ -17,6 +17,7 @@ const generateRefreshToken = (userId) => {
 exports.register = async (req, res) => {
   const { username, password, email, firstname, lastname, dateOfBirth } =
     req.body;
+  const nickname = `${lastname} ${firstname}`;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res
@@ -41,11 +42,17 @@ exports.register = async (req, res) => {
         lastname,
         firstname,
         dateOfBirth,
-        nickname: `${lastname} ${firstname}`,
+        nickname,
       });
       try {
         await newUser.save();
+        await voximplantService.addUser({
+          userName: username,
+          userDisplayName: nickname,
+          userPassword: password,
+        });
       } catch (err) {
+        console.log("err", err);
         return res
           .status(500)
           .json({ success: "false", message: "Couldn't create user" });

@@ -78,9 +78,13 @@ const handleJoinChannel = (socketIO, socket, socketBId, channelId) => {
   }
   socket.join(channelId);
 };
-const handleUserTyping = (socketIO, data) => {
-  const { channelId, isTyping } = data;
-  socketIO.to(channelId).emit("typing", channelId, isTyping);
+const handleUserTyping = (
+  socketIO,
+  { channelId, isTyping, chatFriendId, chatFriendSocketId }
+) => {
+  socketIO
+    .to(chatFriendSocketId)
+    .emit("typing", channelId, chatFriendId, isTyping);
 };
 
 const handleSetSeenMessages = async ({ socket, channelId }) => {
@@ -118,13 +122,13 @@ const handleSendMessage = async (socketIO, data) => {
 
     await NotificationController.handleSendNotification(
       [receiver.FCMtoken],
-      "Tin nhắn mới",
       `${sender.nickname} đã gửi cho bạn tin nhắn`,
       {
         type: "chat",
         channelId,
         memberIds: JSON.stringify(chatChannel.memberIds),
-      }
+      },
+      "Tin nhắn mới"
     );
   } catch (e) {
     console.log("Error when sending message", e);
@@ -162,12 +166,12 @@ const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
     await NotificationController.handleSendNotification(
       [receiver.FCMtoken],
       `${sender.nickname} đã gửi cho bạn một ảnh`,
-      "Tin nhắn mới",
       {
         type: "chat",
         channelId,
         memberIds: JSON.stringify(chatChannel.memberIds),
-      }
+      },
+      "Tin nhắn mới"
     );
   } catch (error) {
     console.log("Error when handling image", error);
@@ -218,6 +222,7 @@ const handleFriendRequest = async (
         [sender.FCMtoken],
         `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
       );
+      socketIO.to(onlineUsers[senderId]).emit("new-notification");
 
       socketIO.to(onlineUsers[senderId]).emit("new-channel", newChannel);
       socketIO.to(onlineUsers[receiverId]).emit("new-channel", newChannel);
@@ -246,6 +251,8 @@ const handleFriendRequest = async (
         .to(onlineUsers[senderId])
         .emit("send-friendRequest", "sentRequest");
       socketIO.to(onlineUsers[receiverId]).emit("send-friendRequest", "accept");
+
+      socketIO.to(onlineUsers[senderId]).emit("new-notification");
       await NotificationController.handleSendNotification(
         [receiver.FCMtoken],
         `${sender.nickname} đã gửi cho bạn lời mời kết bạn`

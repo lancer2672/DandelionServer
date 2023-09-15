@@ -1,9 +1,9 @@
 const fs = require("fs");
 const User = require("../models/user");
+const voximplantService = require("../voximplant/services");
 
 exports.updateUser = async (req, res) => {
   try {
-    console.log("req.id", req.userId);
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({
@@ -27,8 +27,10 @@ exports.updateUser = async (req, res) => {
         new: true,
       }
     );
-
-    console.log("userToUpdate", userToUpdate);
+    const updatedVoximplantUser = {
+      userDisplayName: req.body.nickname || user.nickname,
+    };
+    await voximplantService.setUserInfo(updatedVoximplantUser);
     if (!updatedUser) {
       return res.status(401).json({
         success: false,
@@ -132,7 +134,6 @@ exports.saveFCMtoken = async (req, res) => {
 exports.getAllFriends = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("friends.userId");
-    console.log("user", user);
     if (!user) {
       return res
         .status(404)
