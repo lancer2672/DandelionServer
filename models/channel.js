@@ -41,6 +41,12 @@ const ChannelSchema = new Schema(
             type: String,
           },
         ],
+        callHistory: {
+          duration: {
+            type: Number,
+            default: 0,
+          },
+        },
         isSeen: {
           type: Boolean,
           default: false,

@@ -25,6 +25,7 @@ exports.checkFriendStatus = async (req, res) => {
     const isFriend = checkedUser.friends.some((friend) => {
       return friend.userId == receiverId;
     });
+    console.log("isFriend", isFriend);
     if (isFriend) {
       res.json({
         message: "success",

@@ -37,12 +37,22 @@ module.exports = (socketIO) => {
         });
       }
     });
-    socket.on("send-message", (data) =>
-      chatEventHandler.handleSendMessage(socketIO, data)
-    );
-    socket.on("send-image", (data) =>
-      chatEventHandler.handleSendImage(socketIO, { ...data, userId })
-    );
+
+    socket.on("send-message", (data) => {
+      switch (data.type) {
+        case "message":
+          chatEventHandler.handleSendMessage(socketIO, data);
+          break;
+        case "image":
+          chatEventHandler.handleSendImage(socketIO, { userId, ...data });
+          break;
+        case "callHistory":
+          chatEventHandler.handleSaveCallhistory(socketIO, data);
+          break;
+        default:
+          console.log("Unknown data type");
+      }
+    });
 
     socket.on("login", chatEventHandler.handleLogin);
     socket.on("send-friendRequest", (data) =>

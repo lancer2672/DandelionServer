@@ -32,7 +32,7 @@ const addFriendToFriendList = async (userIdA, userIdB) => {
   try {
     const userA = await User.findById(userIdA);
     const checkIfFriend = userA.friends.some(
-      (friend) => (friend.userId = userIdB)
+      (friend) => friend.userId == userIdB
     );
     if (!checkIfFriend) {
       userA.friends.push({
@@ -109,7 +109,9 @@ const handleSendMessage = async (socketIO, data) => {
       isSeen: false,
       createdAt: new Date(),
     };
-    socketIO.to(channelId).emit("receive-message", newMess, channelId);
+    socketIO
+      .to(channelId)
+      .emit("receive-message", { newMess, channelId, type: "message" });
     const chatChannel = await Channel.findById(channelId);
     const receiverId = chatChannel.memberIds.find(
       (memberId) => memberId != senderId
@@ -156,8 +158,9 @@ const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
     chatChannel.channelMessages.unshift(newMess);
 
     await chatChannel.save();
-    socketIO.to(channelId).emit("receive-image", newMess);
-
+    socketIO
+      .to(channelId)
+      .emit("receive-message", { newMess, channelId, type: "image" });
     const receiverId = chatChannel.memberIds.find(
       (memberId) => memberId != userId
     );
@@ -177,7 +180,49 @@ const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
     console.log("Error when handling image", error);
   }
 };
+const handleSaveCallhistory = async (
+  socketIO,
+  { channelId, senderId, duration }
+) => {
+  try {
+    console.log("data", channelId, senderId, duration);
+    const newMess = {
+      _id: new ObjectId(),
+      userId: senderId,
+      callHistory: { duration },
+      isSeen: false,
+      createdAt: new Date(),
+    };
+    socketIO
+      .to(channelId)
+      .emit("receive-message", { newMess, channelId, type: "callHistory" });
+    const chatChannel = await Channel.findById(channelId);
+    const receiverId = chatChannel.memberIds.find(
+      (memberId) => memberId != senderId
+    );
+    console.log("newMess", newMess);
+    const sender = await User.findById(senderId);
+    const receiver = await User.findById(receiverId);
+    chatChannel.channelMessages.unshift(newMess);
+    chatChannel.lastUpdate = new Date();
+    await chatChannel.save();
 
+    if (duration == 0) {
+      await NotificationController.handleSendNotification(
+        [receiver.FCMtoken],
+        `Bạn đã bỏ lỡ cuộc gọi từ ${sender.nickname}`,
+        {
+          type: "chat",
+          channelId,
+          memberIds: JSON.stringify(chatChannel.memberIds),
+        },
+        "Thông báo"
+      );
+    }
+  } catch (error) {
+    console.log("Error when saving call history", error);
+  }
+};
 const handleLogin = async (userId) => {
   try {
     const chatChannels = await ChatChannel.find({ usersId: { $in: [userId] } });
@@ -236,8 +281,8 @@ const handleFriendRequest = async (
         responseValue: "accept",
       });
 
-      addFriendToFriendList(senderId, receiverId);
-      addFriendToFriendList(receiverId, senderId);
+      await addFriendToFriendList(senderId, receiverId);
+      await addFriendToFriendList(receiverId, senderId);
 
       console.log("Friend request from B to A is accepted");
     } else {
@@ -288,8 +333,8 @@ const handleResponseRequest = async (
         [sender.FCMtoken],
         `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
       );
-      addFriendToFriendList(sender._id, receiver._id);
-      addFriendToFriendList(receiver._id, sender._id);
+      await addFriendToFriendList(sender._id, receiver._id);
+      await addFriendToFriendList(receiver._id, sender._id);
       // socketIO.to(request.sender).emit("new-channel", channel);
       // socketIO.to(request.receiver).emit("new-channel", channel);
 
@@ -357,6 +402,7 @@ module.exports = {
   handleJoinChannel,
   handleSetSeenMessages,
   handleSendMessage,
+  handleSaveCallhistory,
   handleLogin,
   handleFriendRequest,
   handleResponseRequest,

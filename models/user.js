@@ -6,7 +6,6 @@ const UserSchema = new Schema(
     username: {
       type: String,
       required: true,
-      unique: true,
     },
     password: {
       type: String,
@@ -65,6 +64,18 @@ const UserSchema = new Schema(
     lastOnline: {
       type: Date,
       default: new Date(),
+    },
+    emailVerificationCode: {
+      type: String,
+      default: null,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationCodeExpires: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

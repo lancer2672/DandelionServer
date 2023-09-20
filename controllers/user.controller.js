@@ -1,6 +1,6 @@
 const fs = require("fs");
 const User = require("../models/user");
-const voximplantService = require("../voximplant/services");
+const voximplantService = require("../services/voximplant");
 
 exports.updateUser = async (req, res) => {
   try {

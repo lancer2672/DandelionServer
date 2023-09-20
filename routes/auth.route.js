@@ -12,7 +12,6 @@ router.post(
 
 router.post(
   "/register",
-  body("username").exists().withMessage("Username is missing"),
   body("password").exists().withMessage("Password is missing"),
   body("email").exists().withMessage("Email is missing"),
   AuthController.register
@@ -20,12 +19,7 @@ router.post(
 
 router.post("/refresh-token", AuthController.refreshToken);
 
-router.get("/", async (req, res) => {
-  const userId = req.userId;
-  const existUser = await User.findById(userId).select("-password");
-  if (!existUser)
-    return res.status(400).json({ success: false, message: "User not found" });
-  res.json({ success: true, user: existUser });
-});
+router.post("/send-email-verification", AuthController.sendEmailVerification);
+router.get("/verify-email", AuthController.verifyEmail);
 
 module.exports = router;

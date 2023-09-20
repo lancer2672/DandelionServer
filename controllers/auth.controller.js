@@ -1,8 +1,10 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
-const voximplantService = require("../voximplant/services");
+const voximplantService = require("../services/voximplant");
+const { sendVerificationEmail } = require("../services/mailer");
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
@@ -14,9 +16,11 @@ const generateRefreshToken = (userId) => {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
   });
 };
+function generateVerificationCode() {
+  return Math.floor(Math.random() * 900000) + 100000;
+}
 exports.register = async (req, res) => {
-  const { username, password, email, firstname, lastname, dateOfBirth } =
-    req.body;
+  const { password, email, firstname, lastname, dateOfBirth } = req.body;
   const nickname = `${lastname} ${firstname}`;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -24,9 +28,12 @@ exports.register = async (req, res) => {
       .status(400)
       .json({ message: "Invalid information", errors: errors.array() });
   }
-  const existUser = await User.findOne({ username });
+  const existUser = await User.findOne({
+    email: email.toLowerCase(),
+    emailVerified: true,
+  });
   if (existUser) {
-    return res.status(400).json({ message: "Username is already taken" });
+    return res.status(400).json({ message: "Email is already taken" });
   }
   bcrypt.hash(password, 12, async (err, passwordHash) => {
     if (err) {
@@ -35,9 +42,9 @@ exports.register = async (req, res) => {
         .json({ success: "false", message: "Couldn't hash the password" });
     } else if (passwordHash) {
       const newUser = new User({
-        username,
+        username: email.toLowerCase(),
         password: passwordHash,
-        email,
+        email: email.toLowerCase(),
         avatar: null,
         lastname,
         firstname,
@@ -46,11 +53,6 @@ exports.register = async (req, res) => {
       });
       try {
         await newUser.save();
-        await voximplantService.addUser({
-          userName: username,
-          userDisplayName: nickname,
-          userPassword: password,
-        });
       } catch (err) {
         console.log("err", err);
         return res
@@ -74,9 +76,12 @@ exports.login = async (req, res) => {
       .status(400)
       .json({ message: "Invalid information", errors: errors.array() });
   }
-  try {
-    const existUser = await User.findOne({ username });
 
+  try {
+    const existUser = await User.findOne({
+      username: username.toLowerCase(),
+      emailVerified: true,
+    });
     if (!existUser) {
       return res.status(400).json({ message: "User does not exist" });
     } else {
@@ -102,7 +107,6 @@ exports.login = async (req, res) => {
       });
     }
   } catch (err) {
-    console.log("500");
     res.status(500).json({ message: "SERVER ERROR" });
   }
 };
@@ -120,4 +124,64 @@ exports.refreshToken = (req, res) => {
     const newAccessToken = generateAccessToken(userId);
     res.status(200).json({ message: "success", accessToken: newAccessToken });
   });
+};
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { code, password } = req.query;
+
+    const user = await User.findOne({ emailVerificationCode: code });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    if (user.emailVerificationCodeExpires < new Date()) {
+      return res.status(400).json({ message: "Verification code has expired" });
+    }
+    await voximplantService.addUser({
+      userName: user.email.split("@")[0].toLowerCase(),
+      userDisplayName: user.nickname,
+      userPassword: password,
+    });
+    user.emailVerified = true;
+    user.emailVerificationCode = null;
+    user.emailVerificationCodeExpires = null;
+
+    await user.save();
+
+    res.json({ success: true });
+  } catch (er) {
+    console.log("er", er);
+    res.status(400).json({ message: "Failed" });
+  }
+};
+
+exports.sendEmailVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ message: "Email is empty" });
+    }
+    const code = generateVerificationCode();
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      emailVerified: false,
+    });
+
+    if (!user) {
+      console.log("cannot find user");
+      return res.status(400).json({ message: "User does not exist" });
+    }
+    user.emailVerificationCode = code;
+    user.emailVerificationCodeExpires = expires;
+    await user.save();
+    const result = await sendVerificationEmail(email, code);
+
+    res.json({ data: {} });
+  } catch (er) {
+    console.log("er", er);
+    res.status(400).json({ message: "Send email failed" });
+  }
 };

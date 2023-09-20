@@ -67,8 +67,6 @@ exports.getChannelMessages = async (req, res) => {
 
 exports.getLastMessage = async (req, res) => {
   const channelId = req.params.channelId;
-  console.log("Channel", channelId);
-
   const channel = await Channel.findById(channelId);
   let lastMessage = null;
   if (channel.channelMessages.length > 0) {
