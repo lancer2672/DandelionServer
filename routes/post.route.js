@@ -7,7 +7,7 @@ const upload = require("../middleware/upload");
 const PostController = require("../controllers/post.controller");
 
 router.get("/all", verifyToken, PostController.getAllPosts);
-router.get("/", verifyToken, PostController.getPostByUserId);
+router.get("/:userId", verifyToken, PostController.getPostByUserId);
 router.get("/:postId", verifyToken, PostController.getPostById);
 
 router.delete("/comment/:id", verifyToken, PostController.handleDeleteComment);

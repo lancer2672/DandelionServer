@@ -1,5 +1,6 @@
 const chatEventHandler = require("./chatHandler");
 const postEventHandler = require("./postHandler");
+const friendRequestHandler = require("./friendRequestHandler");
 const notificationEventHandler = require("./notificationHandler");
 
 const onlineUsers = {};
@@ -77,6 +78,16 @@ module.exports = (socketIO) => {
         ...data,
         postCreatorSocketId,
         reactUserId: userId,
+      });
+    });
+    socket.on("unfriend", (data) => {
+      const userSocketId = onlineUsers[userId];
+      const friendSocketId = onlineUsers[data.friendId];
+      friendRequestHandler.unFriend(socketIO, {
+        ...data,
+        userSocketId,
+        userId,
+        friendSocketId,
       });
     });
     socket.on("mark-seen-notifications", (data) => {

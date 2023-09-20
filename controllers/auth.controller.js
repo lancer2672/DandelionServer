@@ -127,7 +127,7 @@ exports.refreshToken = (req, res) => {
 exports.verifyEmail = async (req, res) => {
   try {
     const { code, password, isResetPassword } = req.query;
-
+    console.log(code, password, isResetPassword);
     const user = await User.findOne({ emailVerificationCode: code });
 
     if (!user) {
@@ -137,7 +137,8 @@ exports.verifyEmail = async (req, res) => {
     if (user.emailVerificationCodeExpires < new Date()) {
       return res.status(400).json({ message: "Verification code has expired" });
     }
-    if (!isResetPassword) {
+
+    if (JSON.parse(isResetPassword) == false) {
       await voximplantService.addUser({
         userName: user.email.split("@")[0].toLowerCase(),
         userDisplayName: user.nickname,

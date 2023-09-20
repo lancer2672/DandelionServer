@@ -16,6 +16,7 @@ router.get("/:id", verifyToken, UserController.getUserById);
 router.post("/list", verifyToken, UserController.getListUser);
 router.put("/save-token", verifyToken, UserController.saveFCMtoken);
 router.get("/friend/get-all", verifyToken, UserController.getAllFriends);
+
 // router.post("/create", verifyToken, UserController.createUser);
 
 module.exports = router;

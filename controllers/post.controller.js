@@ -16,7 +16,8 @@ exports.getAllPosts = async (req, res) => {
 };
 exports.getPostByUserId = async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.params.userId;
+    console.log("user", userId);
     const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
 
     if (posts.length === 0) {
