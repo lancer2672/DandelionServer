@@ -275,10 +275,12 @@ const handleFriendRequest = async (
       socketIO.to(onlineUsers[senderId]).emit("response-friendRequest", {
         requestId: existedRequestBtoA._id,
         responseValue: "accept",
+        userIds: [senderId, receiverId],
       });
       socketIO.to(onlineUsers[receiverId]).emit("response-friendRequest", {
         requestId: existedRequestBtoA._id,
         responseValue: "accept",
+        userIds: [senderId, receiverId],
       });
 
       await addFriendToFriendList(senderId, receiverId);
@@ -343,12 +345,14 @@ const handleResponseRequest = async (
         .emit("response-friendRequest", {
           requestId: request._id,
           responseValue: "accept",
+          userIds: [sender._id, receiver._id],
         });
       socketIO
         .to(onlineUsers[request.receiver._id])
         .emit("response-friendRequest", {
           requestId: request._id,
           responseValue: "accept",
+          userIds: [sender._id, receiver._id],
         });
       console.log("Friend request accepted and new chat room created");
     } else if (responseValue === "decline") {

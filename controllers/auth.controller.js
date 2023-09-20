@@ -110,7 +110,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "SERVER ERROR" });
   }
 };
-
 exports.refreshToken = (req, res) => {
   const refreshToken = req.body.refreshToken;
   if (!refreshToken) {
@@ -127,7 +126,7 @@ exports.refreshToken = (req, res) => {
 };
 exports.verifyEmail = async (req, res) => {
   try {
-    const { code, password } = req.query;
+    const { code, password, isResetPassword } = req.query;
 
     const user = await User.findOne({ emailVerificationCode: code });
 
@@ -138,12 +137,14 @@ exports.verifyEmail = async (req, res) => {
     if (user.emailVerificationCodeExpires < new Date()) {
       return res.status(400).json({ message: "Verification code has expired" });
     }
-    await voximplantService.addUser({
-      userName: user.email.split("@")[0].toLowerCase(),
-      userDisplayName: user.nickname,
-      userPassword: password,
-    });
-    user.emailVerified = true;
+    if (!isResetPassword) {
+      await voximplantService.addUser({
+        userName: user.email.split("@")[0].toLowerCase(),
+        userDisplayName: user.nickname,
+        userPassword: password,
+      });
+      user.emailVerified = true;
+    }
     user.emailVerificationCode = null;
     user.emailVerificationCodeExpires = null;
 
@@ -155,25 +156,26 @@ exports.verifyEmail = async (req, res) => {
     res.status(400).json({ message: "Failed" });
   }
 };
-
 exports.sendEmailVerification = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, isResetPassword } = req.body;
     if (!email) {
       res.status(400).json({ message: "Email is empty" });
     }
     const code = generateVerificationCode();
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
+
     const user = await User.findOne({
       email: email.toLowerCase(),
-      emailVerified: false,
+      emailVerified: isResetPassword ? true : false,
     });
 
     if (!user) {
       console.log("cannot find user");
       return res.status(400).json({ message: "User does not exist" });
     }
+
     user.emailVerificationCode = code;
     user.emailVerificationCodeExpires = expires;
     await user.save();
@@ -183,5 +185,51 @@ exports.sendEmailVerification = async (req, res) => {
   } catch (er) {
     console.log("er", er);
     res.status(400).json({ message: "Send email failed" });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json({ message: "Invalid information", errors: errors.array() });
+  }
+  try {
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      emailVerified: true,
+    });
+    bcrypt.hash(newPassword, 12, async (err, passwordHash) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({ success: "false", message: "Couldn't hash the password" });
+      } else if (passwordHash) {
+        user.password = passwordHash;
+        try {
+          await user.save();
+        } catch (err) {
+          console.log("err", err);
+          return res
+            .status(500)
+            .json({ success: "false", message: "Couldn't update password" });
+        }
+        const updatedVoximplantUser = {
+          userPassword: newPassword,
+        };
+        await voximplantService.setUserInfo(updatedVoximplantUser);
+        user.emailVerificationCode = null;
+        user.emailVerificationCodeExpires = null;
+        return res.json({
+          success: "true",
+          message: "Password reset successfully",
+          data: { user },
+        });
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "SERVER ERROR" });
   }
 };

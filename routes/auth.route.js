@@ -21,5 +21,11 @@ router.post("/refresh-token", AuthController.refreshToken);
 
 router.post("/send-email-verification", AuthController.sendEmailVerification);
 router.get("/verify-email", AuthController.verifyEmail);
+router.post(
+  "/reset-password",
+  body("newPassword").exists().withMessage("newPassword is missing"),
+  body("email").exists().withMessage("email is missing"),
+  AuthController.resetPassword
+);
 
 module.exports = router;
