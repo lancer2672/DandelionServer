@@ -88,6 +88,7 @@ const handleUserTyping = (
 };
 
 const handleSetSeenMessages = async ({ socket, channelId }) => {
+  console.log("JoinRoom: ", channelId);
   try {
     await Channel.updateOne(
       { _id: channelId },
