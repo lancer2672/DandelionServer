@@ -4,6 +4,7 @@ const friendRequestHandler = require("./friendRequestHandler");
 const notificationEventHandler = require("./notificationHandler");
 
 const onlineUsers = {};
+
 module.exports = (socketIO) => {
   socketIO.on("connection", (socket) => {
     //to detect user's online status
@@ -49,6 +50,12 @@ module.exports = (socketIO) => {
           break;
         case "callHistory":
           chatEventHandler.handleSaveCallhistory(socketIO, data);
+          break;
+        case "video":
+          chatEventHandler.handleSendVideoMessage(socketIO, {
+            userId,
+            ...data,
+          });
           break;
         default:
           console.log("Unknown data type");

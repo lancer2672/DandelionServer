@@ -36,7 +36,16 @@ const ChannelSchema = new Schema(
           type: String,
           default: null,
         },
+        type: {
+          type: String,
+          default: "message",
+        },
         imageUrls: [
+          {
+            type: String,
+          },
+        ],
+        videoUrls: [
           {
             type: String,
           },
@@ -44,7 +53,7 @@ const ChannelSchema = new Schema(
         callHistory: {
           duration: {
             type: Number,
-            default: 0,
+            default: -1,
           },
         },
         isSeen: {

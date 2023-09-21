@@ -102,10 +102,12 @@ const handleSetSeenMessages = async ({ socket, channelId }) => {
 const handleSendMessage = async (socketIO, data) => {
   try {
     const { channelId, senderId, newMessage } = data;
+
     const newMess = {
       _id: new ObjectId(),
       userId: senderId,
       message: newMessage,
+
       isSeen: false,
       createdAt: new Date(),
     };
@@ -221,6 +223,41 @@ const handleSaveCallhistory = async (
     }
   } catch (error) {
     console.log("Error when saving call history", error);
+  }
+};
+const handleSendVideoMessage = async (socketIO, data) => {
+  const { channelId, videoUrls, userId } = data;
+  console.log(data);
+  try {
+    const chatChannel = await Channel.findById(channelId);
+    const newMess = {
+      _id: new ObjectId(),
+      userId,
+      videoUrls: videoUrls,
+      createdAt: new Date(),
+    };
+    chatChannel.channelMessages.unshift(newMess);
+    await chatChannel.save();
+    socketIO
+      .to(channelId)
+      .emit("receive-message", { newMess, channelId, type: "video" });
+    const receiverId = chatChannel.memberIds.find(
+      (memberId) => memberId != userId
+    );
+    const receiver = await User.findById(receiverId);
+    const sender = await User.findById(userId);
+    await NotificationController.handleSendNotification(
+      [receiver.FCMtoken],
+      `${sender.nickname} đã gửi cho bạn video`,
+      {
+        type: "chat",
+        channelId,
+        memberIds: JSON.stringify(chatChannel.memberIds),
+      },
+      "Tin nhắn mới"
+    );
+  } catch (error) {
+    console.log("Error when handling video", error);
   }
 };
 const handleLogin = async (userId) => {
@@ -404,13 +441,16 @@ const handleUserOnline = async (userId) => {
 module.exports = {
   handleJoinChannels,
   handleJoinChannel,
-  handleSetSeenMessages,
+
+  handleSendVideoMessage,
   handleSendMessage,
   handleSaveCallhistory,
+  handleSendImage,
+
   handleLogin,
   handleFriendRequest,
+  handleSetSeenMessages,
   handleResponseRequest,
-  handleSendImage,
   handleUserOffline,
   handleUserOnline,
   handleUserTyping,
