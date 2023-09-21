@@ -25,12 +25,13 @@ exports.checkFriendStatus = async (req, res) => {
     const isFriend = checkedUser.friends.some((friend) => {
       return friend.userId == receiverId;
     });
-    console.log("isFriend", isFriend);
+
     if (isFriend) {
       res.json({
         message: "success",
         data: { result: "friend" },
       });
+      console.log("friendStatus: friend");
     } else {
       const hasAPendingRequest1 = await FriendRequestModel.findOne({
         receiver: receiverId,
@@ -43,6 +44,7 @@ exports.checkFriendStatus = async (req, res) => {
           message: "success",
           data: { result: "sentRequest" },
         });
+        console.log("friendStatus: sentRequest");
       } else {
         const hasAPendingRequest2 = await FriendRequestModel.findOne({
           receiver: req.userId,
@@ -55,11 +57,13 @@ exports.checkFriendStatus = async (req, res) => {
             message: "success",
             data: { result: "accept" },
           });
+          console.log("friendStatus: accept");
         } else {
           res.json({
             message: "success",
             data: { result: "sendFriendRequest" },
           });
+          console.log("friendStatus: sendFriendRequest");
         }
       }
     }

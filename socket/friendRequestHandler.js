@@ -34,7 +34,7 @@ const unFriend = async (socketIO, data) => {
       channel.isInWaitingList = true;
       await channel.save();
     }
-
+    console.log("no");
     socketIO.to(userSocketId).emit("unfriend", friendId);
     socketIO.to(friendSocketId).emit("unfriend", userId);
   } catch (err) {

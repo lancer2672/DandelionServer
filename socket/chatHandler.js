@@ -332,12 +332,13 @@ const handleFriendRequest = async (
         status: "pending",
       });
       await newRequest.save();
+      console.log("onlineUsers[senderId]", onlineUsers[senderId]);
       socketIO
         .to(onlineUsers[senderId])
         .emit("send-friendRequest", "sentRequest");
       socketIO.to(onlineUsers[receiverId]).emit("send-friendRequest", "accept");
 
-      socketIO.to(onlineUsers[senderId]).emit("new-notification");
+      socketIO.to(onlineUsers[receiverId]).emit("new-notification");
       await NotificationController.handleSendNotification(
         [receiver.FCMtoken],
         `${sender.nickname} đã gửi cho bạn lời mời kết bạn`
