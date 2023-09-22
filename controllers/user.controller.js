@@ -1,6 +1,19 @@
-const fs = require("fs");
+const mongoose = require("mongoose");
 const User = require("../models/user");
+const SearchHistory = require("../models/search-history");
 const voximplantService = require("../services/voximplant");
+
+const getDistinctSearchedUsers = async (userId) => {
+  const result = await SearchHistory.aggregate([
+    { $match: { user: mongoose.Types.ObjectId(userId) } },
+    { $unwind: "$searchedUsers" },
+    { $match: { "searchedUsers.deletedAt": { $exists: false } } },
+    { $group: { _id: "$searchedUsers.userId" } },
+    { $limit: 5 },
+  ]);
+
+  return result.map((item) => item._id);
+};
 
 exports.updateUser = async (req, res) => {
   try {
@@ -50,6 +63,62 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.addUserToSearchHistory = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    await SearchHistory.updateOne(
+      { user: req.userId },
+      { $push: { searchedUsers: { userId, searchTime: new Date() } } },
+      { upsert: true }
+    );
+
+    return res.json({
+      success: true,
+      message: "User added to search history successfully",
+    });
+  } catch (err) {
+    console.log("err", err);
+    return res
+      .status(400)
+      .json({ success: false, message: "Cannot add user to search history" });
+  }
+};
+
+exports.removeUserFromSearchHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    await SearchHistory.updateOne(
+      { user: req.userId, "searchedUsers.userId": userId },
+      { $set: { "searchedUsers.$.deletedAt": new Date() } }
+    );
+
+    return res.json({
+      success: true,
+      message: "User removed from search history successfully",
+    });
+  } catch (err) {
+    console.log("err", err);
+    return res.status(400).json({
+      success: false,
+      message: "Cannot remove user from search history",
+    });
+  }
+};
+
 exports.searchUsers = async (req, res) => {
   try {
     const { q: keyword } = req.query;
@@ -78,6 +147,52 @@ exports.searchUsers = async (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Cannot get users" });
+  }
+};
+
+exports.getRecentSearchHistory = async (req, res) => {
+  try {
+    const searchHistory = await SearchHistory.aggregate([
+      { $match: { user: mongoose.Types.ObjectId(req.userId) } },
+      { $unwind: "$searchedUsers" },
+      { $match: { "searchedUsers.deletedAt": { $exists: false } } },
+      {
+        $group: {
+          _id: "$searchedUsers.userId",
+          lastSearchTime: { $max: "$searchedUsers.searchTime" },
+        },
+      },
+      { $sort: { lastSearchTime: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+            { $project: { password: 0 } },
+          ],
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+    ]);
+
+    const userIds = searchHistory.map((item) => item._id);
+    const users = await User.find({ _id: { $in: userIds } });
+
+    return res.json({
+      success: true,
+      message: "Recent search history fetched successfully",
+      data: users,
+    });
+  } catch (err) {
+    console.log("err", err);
+    return res
+      .status(400)
+      .json({ success: false, message: "Cannot get recent search history" });
   }
 };
 

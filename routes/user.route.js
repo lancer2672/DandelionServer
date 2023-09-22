@@ -17,6 +17,22 @@ router.post("/list", verifyToken, UserController.getListUser);
 router.put("/save-token", verifyToken, UserController.saveFCMtoken);
 router.get("/friend/get-all", verifyToken, UserController.getAllFriends);
 
+router.post(
+  "/search-history/add",
+  verifyToken,
+  UserController.addUserToSearchHistory
+);
+router.delete(
+  "/search-history/remove/:userId",
+  verifyToken,
+  UserController.removeUserFromSearchHistory
+);
+router.get(
+  "/search-history/recent",
+  verifyToken,
+  UserController.getRecentSearchHistory
+);
+
 // router.post("/create", verifyToken, UserController.createUser);
 
 module.exports = router;

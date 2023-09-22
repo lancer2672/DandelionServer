@@ -56,12 +56,12 @@ const acceptFriendRequest = async (request) => {
   try {
     request.status = "accepted";
     await request.save();
-
     const channel = await findOrCreateChannel("New Chat Room", [
       request.sender,
       request.receiver,
     ]);
-
+    channel.isInWaitingList = false;
+    await channel.save();
     return channel;
   } catch (er) {
     console.log(er);
@@ -297,7 +297,7 @@ const handleFriendRequest = async (
       receiverId,
       senderId
     );
-
+    //if existed then accept the request
     if (existedRequestBtoA) {
       const newChannel = await acceptFriendRequest(existedRequestBtoA);
       console.log("newChannel", newChannel);
@@ -367,8 +367,9 @@ const handleResponseRequest = async (
         request.sender,
         request.receiver,
       ]);
-
+      channel.isInWaitingList = false;
       request.status = "accepted";
+      await channel.save();
       await request.save();
       await NotificationController.handleSendNotification(
         [sender.FCMtoken],
