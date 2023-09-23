@@ -9,7 +9,6 @@ const UserSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
     },
     nickname: {
       type: String,
@@ -25,7 +24,6 @@ const UserSchema = new Schema(
     },
     dateOfBirth: {
       type: Date,
-      required: true,
     },
     email: {
       type: String,
@@ -36,7 +34,6 @@ const UserSchema = new Schema(
       //0: male, 1:female
       enum: [0, 1],
       default: 0,
-      required: true,
     },
     phoneNumber: {
       type: String,
@@ -75,6 +72,10 @@ const UserSchema = new Schema(
     },
     emailVerificationCodeExpires: {
       type: Date,
+      default: null,
+    },
+    voximplantPassword: {
+      type: String,
       default: null,
     },
   },

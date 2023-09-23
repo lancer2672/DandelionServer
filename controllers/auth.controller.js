@@ -1,6 +1,7 @@
 const User = require("../models/user");
-const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const voximplantService = require("../services/voximplant");
@@ -87,12 +88,10 @@ exports.login = async (req, res) => {
     } else {
       bcrypt.compare(password, existUser.password, (err, compareRes) => {
         if (err) {
-          // error while comparing
           res
             .status(502)
             .json({ message: "Error while checking user's password" });
         } else if (compareRes) {
-          // password match
           const accessToken = generateAccessToken(existUser._id);
           const refreshToken = generateRefreshToken(existUser._id);
           delete existUser.password;
@@ -101,7 +100,6 @@ exports.login = async (req, res) => {
             data: { token: accessToken, refreshToken, user: existUser },
           });
         } else {
-          // password doesn't match
           res.status(401).json({ message: "Incorrect password" });
         }
       });
@@ -110,6 +108,58 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "SERVER ERROR" });
   }
 };
+exports.loginWithGoogle = async (req, res) => {
+  const { idToken } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json({ message: "Invalid information", errors: errors.array() });
+  }
+
+  try {
+    const client = new OAuth2Client(process.env.CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = payload["email"];
+    const familyName = payload["family_name"];
+    const givenName = payload["given_name"];
+    const picture = payload["picture"];
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      const nickname = familyName + " " + givenName;
+      user = new User({
+        email,
+        username: email,
+        nickname,
+        firstname: givenName,
+        lastname: familyName,
+        voximplantPassword: email,
+      });
+      await voximplantService.addUser({
+        userName: email.split("@")[0].toLowerCase(),
+        userDisplayName: nickname,
+        userPassword: email.split("@")[0].toLowerCase(),
+      });
+      await user.save();
+    }
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    res.status(200).json({
+      message: "User logged in successfully",
+      data: { token: accessToken, refreshToken, user },
+    });
+  } catch (err) {
+    console.log("err", err);
+    res.status(500).json({ message: "SERVER ERROR" });
+  }
+};
+
 exports.refreshToken = (req, res) => {
   const refreshToken = req.body.refreshToken;
   if (!refreshToken) {
@@ -188,7 +238,6 @@ exports.sendEmailVerification = async (req, res) => {
     res.status(400).json({ message: "Send email failed" });
   }
 };
-
 exports.resetPassword = async (req, res) => {
   const { email, newPassword } = req.body;
   const errors = validationResult(req);

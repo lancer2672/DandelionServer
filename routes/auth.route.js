@@ -10,6 +10,8 @@ router.post(
   AuthController.login
 );
 
+router.post("/google", AuthController.loginWithGoogle);
+
 router.post(
   "/register",
   body("password").exists().withMessage("Password is missing"),
