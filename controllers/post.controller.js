@@ -41,7 +41,7 @@ exports.getPostByUserId = async (req, res) => {
 
 exports.getPostById = async (req, res) => {
   try {
-    const postId = req.params.postId;
+    const { postId } = req.query;
     const post = await Post.findById(postId);
 
     if (!post) {
