@@ -144,7 +144,7 @@ exports.loginWithGoogle = async (req, res) => {
       await voximplantService.addUser({
         userName: email.split("@")[0].toLowerCase(),
         userDisplayName: nickname,
-        userPassword: email.split("@")[0].toLowerCase(),
+        userPassword: email,
       });
       await user.save();
     }
@@ -280,6 +280,54 @@ exports.resetPassword = async (req, res) => {
       }
     });
   } catch (err) {
+    res.status(500).json({ message: "SERVER ERROR" });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res
+      .status(400)
+      .json({ message: "Invalid information", errors: errors.array() });
+  }
+  try {
+    const user = await User.findById(req.userId);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    console.log("currentPassword, newPassword", isMatch, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    bcrypt.hash(newPassword, 12, async (err, passwordHash) => {
+      if (err) {
+        return res
+          .status(500)
+          .json({ success: "false", message: "Couldn't hash the password" });
+      } else if (passwordHash) {
+        user.password = passwordHash;
+        try {
+          await user.save();
+        } catch (err) {
+          console.log("err", err);
+          return res
+            .status(500)
+            .json({ success: "false", message: "Couldn't update password" });
+        }
+        const updatedVoximplantUser = {
+          userPassword: newPassword,
+        };
+        await voximplantService.setUserInfo(updatedVoximplantUser);
+        return res.json({
+          success: "true",
+          message: "Password changed successfully",
+          data: { user },
+        });
+      }
+    });
+  } catch (err) {
+    console.log("err", err);
     res.status(500).json({ message: "SERVER ERROR" });
   }
 };

@@ -8,7 +8,7 @@ const PostController = require("../controllers/post.controller");
 
 router.get("/all", verifyToken, PostController.getAllPosts);
 router.get("/:userId", verifyToken, PostController.getPostByUserId);
-router.get("/:postId", verifyToken, PostController.getPostById);
+router.get("/", verifyToken, PostController.getPostById);
 
 router.delete("/comment/:id", verifyToken, PostController.handleDeleteComment);
 router.put("/react/:id", verifyToken, PostController.handleReactPost);

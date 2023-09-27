@@ -1,16 +1,13 @@
-const User = require("../models/user");
-const Post = require("../models/post");
-const NotificationController = require("../controllers/notification.controller");
+const User = require("../../models/user");
+const Post = require("../../models/post");
+const NotificationController = require("../../controllers/notification.controller");
+const Global = require("../global");
 
-const handleUploadComment = async (socketIO, data) => {
-  const {
-    postCreatorSocketId,
-    commentUserSocketId,
-    commentUserId,
-    postCreatorId,
-    postId,
-    content,
-  } = data;
+const handleUploadComment = async (data) => {
+  const socketIO = Global.socketIO;
+  const { commentUserId, postCreatorId, postId, content } = data;
+  const postCreatorSocketId = Global.onlineUsers[postCreatorId];
+  const commentUserSocketId = Global.onlineUsers[commentUserId];
   try {
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId);
@@ -45,9 +42,12 @@ const handleUploadComment = async (socketIO, data) => {
   }
 };
 
-const handleReactPost = async (socketIO, data) => {
+const handleReactPost = async function (data) {
   try {
-    const { postCreatorSocketId, reactUserId, postCreatorId, postId } = data;
+    const socketIO = Global.socketIO;
+    const reactUserId = this.handshake.query.userId;
+    const { postCreatorId, postId } = data;
+    const postCreatorSocketId = Global.onlineUsers[postCreatorId];
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId).select("-password");
     const reactUser = await User.findById(reactUserId);

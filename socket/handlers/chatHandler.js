@@ -1,9 +1,10 @@
-const ChatChannel = require("../models/channel");
+const ChatChannel = require("../../models/channel");
 const ObjectId = require("mongoose").Types.ObjectId;
-const Channel = require("../models/channel");
-const User = require("../models/user");
-const FriendRequestModel = require("../models/friend-request");
-const NotificationController = require("../controllers/notification.controller");
+const Channel = require("../../models/channel");
+const User = require("../../models/user");
+const FriendRequestModel = require("../../models/friend-request");
+const NotificationController = require("../../controllers/notification.controller");
+const Global = require("../global");
 
 const fs = require("fs");
 
@@ -27,7 +28,6 @@ const findOrCreateChannel = async (channelName, memberIds) => {
     console.error("Error finding or creating channel", err);
   }
 };
-
 const addFriendToFriendList = async (userIdA, userIdB) => {
   try {
     const userA = await User.findById(userIdA);
@@ -68,42 +68,66 @@ const acceptFriendRequest = async (request) => {
   }
 };
 
-const handleJoinChannels = (socket, channelIds = []) => {
-  socket.join(channelIds);
+const handleJoinChannels = function (channelIds = []) {
+  this.join(channelIds);
 };
-const handleJoinChannel = (socketIO, socket, socketBId, channelId) => {
-  const socketB = socketIO.of("/").sockets.get(socketBId);
+//chat friend (userB) will join to the channel
+const handleJoinChannel = function ({ userBId, channelId }) {
+  const socketB = Global.socketIO.of("/").sockets.get(socketBId);
+  const socketBId = Global.onlineUsers[userBId].socketId;
+  cónt;
   if (socketBId) {
     socketB.join(channelId);
   }
-  socket.join(channelId);
+  this.join(channelId);
 };
-const handleUserTyping = (
-  socketIO,
-  { channelId, isTyping, chatFriendId, chatFriendSocketId }
-) => {
-  socketIO
-    .to(chatFriendSocketId)
-    .emit("typing", channelId, chatFriendId, isTyping);
+const handleUserTyping = ({ channelId, isTyping, chatFriendId }) => {
+  //if friend is online
+  if (Global.onlineUsers[chatFriendId]?.socketId) {
+    const chatFriendSocketId = Global.onlineUsers[chatFriendId].socketId;
+    Global.socketIO
+      .to(chatFriendSocketId)
+      .emit("typing", channelId, chatFriendId, isTyping);
+  }
 };
 
-const handleSetSeenMessages = async ({ socket, channelId }) => {
+const handleSetSeenMessages = async function ({ channelId }) {
   console.log("JoinRoom: ", channelId);
   try {
     await Channel.updateOne(
       { _id: channelId },
       { $set: { "channelMessages.$[].isSeen": true } }
     );
-    socket.emit("join-chatRoom", channelId);
+    this.emit("join-chatRoom", channelId);
   } catch (err) {
     console.log(err);
   }
 };
 
-const handleSendMessage = async (socketIO, data) => {
+const handleNewMessageType = function (data) {
+  switch (data.type) {
+    case "message":
+      handleSendMessage(data);
+      break;
+    case "image":
+      handleSendImage(data);
+      break;
+    case "callHistory":
+      handleSaveCallhistory(data);
+      break;
+    case "video":
+      handleSendVideoMessage(data);
+      break;
+    default:
+      console.log("Unknown data type");
+  }
+};
+const handleSendMessage = async (data) => {
   try {
+    const socketIO = Global.socketIO;
     const { channelId, senderId, newMessage } = data;
-
+    console.log(data);
+    console.log(socketIO == null);
     const newMess = {
       _id: new ObjectId(),
       userId: senderId,
@@ -140,8 +164,10 @@ const handleSendMessage = async (socketIO, data) => {
   }
 };
 
-const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
+const handleSendImage = async function ({ channelId, imagesData }) {
   try {
+    const socketIO = Global.socketIO;
+    const userId = this.handshake.query.userId;
     const imageUrls = [];
     for (let imageData of imagesData) {
       const fileName = Date.now() + "-" + userId + ".png";
@@ -183,10 +209,12 @@ const handleSendImage = async (socketIO, { channelId, imagesData, userId }) => {
     console.log("Error when handling image", error);
   }
 };
-const handleSaveCallhistory = async (
-  socketIO,
-  { channelId, senderId, duration }
-) => {
+const handleSaveCallhistory = async function ({
+  channelId,
+  senderId,
+  duration,
+}) {
+  const socketIO = Global.socketIO;
   try {
     console.log("data", channelId, senderId, duration);
     const newMess = {
@@ -226,9 +254,10 @@ const handleSaveCallhistory = async (
     console.log("Error when saving call history", error);
   }
 };
-const handleSendVideoMessage = async (socketIO, data) => {
-  const { channelId, videoUrls, userId } = data;
-  console.log(data);
+const handleSendVideoMessage = async function (data) {
+  const { channelId, videoUrls } = data;
+  const socketIO = Global.socketIO;
+  const userId = this.handshake.query.userId;
   try {
     const chatChannel = await Channel.findById(channelId);
     const newMess = {
@@ -270,154 +299,6 @@ const handleLogin = async (userId) => {
   }
 };
 
-//Sender: A receiver: B  A -> to B
-const handleFriendRequest = async (
-  socketIO,
-  { senderId, receiverId },
-  onlineUsers
-) => {
-  try {
-    const sender = await User.findById(senderId);
-    const receiver = await User.findById(receiverId);
-    const checkIfFriend = sender.friends.some(
-      (friend) => friend.userId == receiverId
-    );
-    if (checkIfFriend) {
-      return;
-    }
-    const existedRequestAtoB = await findExistedPendingFriendRequest(
-      senderId,
-      receiverId
-    );
-    if (existedRequestAtoB) {
-      console.log("Friend request from A to B is already pending");
-      return;
-    }
-    const existedRequestBtoA = await findExistedPendingFriendRequest(
-      receiverId,
-      senderId
-    );
-    //if existed then accept the request
-    if (existedRequestBtoA) {
-      const newChannel = await acceptFriendRequest(existedRequestBtoA);
-      console.log("newChannel", newChannel);
-      await NotificationController.handleSendNotification(
-        [sender.FCMtoken],
-        `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
-      );
-      socketIO.to(onlineUsers[senderId]).emit("new-notification");
-
-      socketIO.to(onlineUsers[senderId]).emit("new-channel", newChannel);
-      socketIO.to(onlineUsers[receiverId]).emit("new-channel", newChannel);
-
-      socketIO.to(onlineUsers[senderId]).emit("response-friendRequest", {
-        requestId: existedRequestBtoA._id,
-        responseValue: "accept",
-        userIds: [senderId, receiverId],
-      });
-      socketIO.to(onlineUsers[receiverId]).emit("response-friendRequest", {
-        requestId: existedRequestBtoA._id,
-        responseValue: "accept",
-        userIds: [senderId, receiverId],
-      });
-
-      await addFriendToFriendList(senderId, receiverId);
-      await addFriendToFriendList(receiverId, senderId);
-
-      console.log("Friend request from B to A is accepted");
-    } else {
-      const newRequest = new FriendRequestModel({
-        sender: senderId,
-        receiver: receiverId,
-        status: "pending",
-      });
-      await newRequest.save();
-      console.log("onlineUsers[senderId]", onlineUsers[senderId]);
-      socketIO
-        .to(onlineUsers[senderId])
-        .emit("send-friendRequest", "sentRequest");
-      socketIO.to(onlineUsers[receiverId]).emit("send-friendRequest", "accept");
-
-      socketIO.to(onlineUsers[receiverId]).emit("new-notification");
-      await NotificationController.handleSendNotification(
-        [receiver.FCMtoken],
-        `${sender.nickname} đã gửi cho bạn lời mời kết bạn`
-      );
-    }
-  } catch (er) {
-    console.log(er);
-  }
-};
-
-const handleResponseRequest = async (
-  socketIO,
-  { requestId, responseValue },
-  onlineUsers
-) => {
-  try {
-    const request = await FriendRequestModel.findById(requestId);
-    const sender = await User.findById(request.sender);
-    const receiver = await User.findById(request.receiver);
-    if (!request) {
-      console.log("Friend request not found");
-      return;
-    }
-    if (responseValue === "accept") {
-      const channel = await findOrCreateChannel("New Chat Room", [
-        request.sender,
-        request.receiver,
-      ]);
-      channel.isInWaitingList = false;
-      request.status = "accepted";
-      await channel.save();
-      await request.save();
-      await NotificationController.handleSendNotification(
-        [sender.FCMtoken],
-        `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
-      );
-      await addFriendToFriendList(sender._id, receiver._id);
-      await addFriendToFriendList(receiver._id, sender._id);
-      // socketIO.to(request.sender).emit("new-channel", channel);
-      // socketIO.to(request.receiver).emit("new-channel", channel);
-
-      socketIO
-        .to(onlineUsers[request.sender._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "accept",
-          userIds: [sender._id, receiver._id],
-        });
-      socketIO
-        .to(onlineUsers[request.receiver._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "accept",
-          userIds: [sender._id, receiver._id],
-        });
-      console.log("Friend request accepted and new chat room created");
-    } else if (responseValue === "decline") {
-      request.status = "declined";
-      socketIO
-        .to(onlineUsers[request.sender._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "decline",
-        });
-      socketIO
-        .to(onlineUsers[request.receiver._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "decline",
-        });
-      await request.save();
-      console.log("Friend request declined");
-    } else {
-      console.log("Invalid status value");
-    }
-  } catch (er) {
-    console.log(er);
-  }
-};
 const handleUserOffline = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -445,15 +326,12 @@ module.exports = {
   handleJoinChannels,
   handleJoinChannel,
 
-  handleSendVideoMessage,
-  handleSendMessage,
-  handleSaveCallhistory,
-  handleSendImage,
+  handleNewMessageType,
 
   handleLogin,
-  handleFriendRequest,
+
   handleSetSeenMessages,
-  handleResponseRequest,
+
   handleUserOffline,
   handleUserOnline,
   handleUserTyping,
