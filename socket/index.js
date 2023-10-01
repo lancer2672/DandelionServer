@@ -38,7 +38,10 @@ module.exports = (socketIO) => {
       notificationEventHandler.handleMarkNotificationAsSeen
     );
     //location
+
     socket.on("send-location", locationEventHandler.handleSendLocation);
+
+    //get friend location
     socket.on("start-tracking", locationEventHandler.handleStartTracking);
     socket.on("stop-tracking", locationEventHandler.handleStopTracking);
 

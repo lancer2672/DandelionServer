@@ -67,6 +67,80 @@ const acceptFriendRequest = async (request) => {
     console.log(er);
   }
 };
+const emitMessage = (channelId, newMess, type) => {
+  const socketIO = Global.socketIO;
+  socketIO.to(channelId).emit("receive-message", { newMess, channelId, type });
+};
+const getChannelMembers = async (userId, channelId) => {
+  const channel = await Channel.findById(channelId);
+  const receiverId = channel.memberIds.find((memberId) => memberId != userId);
+  const receiver = await User.findById(receiverId);
+  const sender = await User.findById(userId);
+
+  return { receiver, sender };
+};
+const sendNotification = async (
+  receiver,
+  sender,
+  channelId,
+  notificationTitle
+) => {
+  const channel = await Channel.findById(channelId);
+  await NotificationController.handleSendNotification(
+    [receiver.FCMtoken],
+    `${sender.nickname} ${notificationTitle}`,
+    {
+      type: "chat",
+      channelId,
+      memberIds: JSON.stringify(channel.memberIds),
+    },
+    "Thông báo"
+  );
+};
+const createMessage = async function (data, messageType) {
+  const { channelId, userId } = data;
+  let newMess = { userId, isSeen: false, createdAt: new Date() };
+
+  switch (messageType) {
+    case "text":
+      newMess.message = data.newMessage;
+      break;
+    case "image":
+      const imageUrls = [];
+
+      for (let imageData of data.imagesData) {
+        const fileName = Date.now() + "-" + userId + ".png";
+        const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
+        const imageUrl = "/uploads/" + fileName;
+        imageUrls.push(imageUrl);
+      }
+      newMess.imageUrls = imageUrls;
+
+      break;
+    case "callHistory":
+      newMess.callHistory = { duration: data.duration };
+
+      break;
+    case "videoMessage":
+      newMess.videoUrls = data.videoUrls;
+
+      break;
+    default:
+      throw new Error("Invalid message type");
+  }
+  console.log("newmess", newMess);
+
+  const chatChannel = await Channel.findById(channelId);
+  chatChannel.channelMessages.unshift(newMess);
+  chatChannel.lastUpdate = new Date();
+  const savedChatChannel = await chatChannel.save();
+
+  // Get the last message in the array, which is the one we just added
+  const savedMessage = savedChatChannel.channelMessages[0];
+
+  return savedMessage;
+};
 
 const handleJoinChannels = function (channelIds = []) {
   this.join(channelIds);
@@ -105,149 +179,73 @@ const handleSetSeenMessages = async function ({ channelId }) {
 };
 
 const handleNewMessageType = function (data) {
+  const userId = this.handshake.query.userId;
   switch (data.type) {
-    case "message":
-      handleSendMessage(data);
+    case "text":
+      handleSendMessage({ ...data, userId });
       break;
     case "image":
-      handleSendImage(data);
+      handleSendImage({ ...data, userId });
       break;
     case "callHistory":
-      handleSaveCallhistory(data);
+      handleSaveCallhistory({ ...data, userId });
       break;
     case "video":
-      handleSendVideoMessage(data);
+      handleSendVideoMessage({ ...data, userId });
       break;
     default:
       console.log("Unknown data type");
   }
 };
-const handleSendMessage = async (data) => {
+
+const handleSendMessage = async function (data) {
   try {
     const socketIO = Global.socketIO;
-    const { channelId, senderId, newMessage } = data;
-    console.log(data);
-    console.log(socketIO == null);
-    const newMess = {
-      _id: new ObjectId(),
-      userId: senderId,
-      message: newMessage,
+    const { channelId, userId } = data;
+    const newMess = await createMessage(data, "text");
 
-      isSeen: false,
-      createdAt: new Date(),
-    };
-    socketIO
-      .to(channelId)
-      .emit("receive-message", { newMess, channelId, type: "message" });
-    const chatChannel = await Channel.findById(channelId);
-    const receiverId = chatChannel.memberIds.find(
-      (memberId) => memberId != senderId
-    );
-    const sender = await User.findById(senderId);
-    const receiver = await User.findById(receiverId);
-    chatChannel.channelMessages.unshift(newMess);
-    chatChannel.lastUpdate = new Date();
-    await chatChannel.save();
-
-    await NotificationController.handleSendNotification(
-      [receiver.FCMtoken],
-      `${sender.nickname} đã gửi cho bạn tin nhắn`,
-      {
-        type: "chat",
-        channelId,
-        memberIds: JSON.stringify(chatChannel.memberIds),
-      },
-      "Tin nhắn mới"
+    emitMessage(channelId, newMess, "text");
+    const { receiver, sender } = await getChannelMembers(userId, channelId);
+    await sendNotification(
+      receiver,
+      sender,
+      channelId,
+      "đã gửi cho bạn tin nhắn"
     );
   } catch (e) {
     console.log("Error when sending message", e);
   }
 };
-
-const handleSendImage = async function ({ channelId, imagesData }) {
+const handleSendImage = async function (data) {
   try {
-    const socketIO = Global.socketIO;
-    const userId = this.handshake.query.userId;
-    const imageUrls = [];
-    for (let imageData of imagesData) {
-      const fileName = Date.now() + "-" + userId + ".png";
-      const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
-      fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
-      const imageUrl = "/uploads/" + fileName;
-      imageUrls.push(imageUrl);
-    }
-
-    const chatChannel = await Channel.findById(channelId);
-    const newMess = {
-      _id: new ObjectId(),
-      userId,
-      imageUrls: imageUrls,
-      createdAt: new Date(),
-    };
-    chatChannel.channelMessages.unshift(newMess);
-
-    await chatChannel.save();
-    socketIO
-      .to(channelId)
-      .emit("receive-message", { newMess, channelId, type: "image" });
-    const receiverId = chatChannel.memberIds.find(
-      (memberId) => memberId != userId
-    );
-    const receiver = await User.findById(receiverId);
-    const sender = await User.findById(userId);
-    await NotificationController.handleSendNotification(
-      [receiver.FCMtoken],
-      `${sender.nickname} đã gửi cho bạn một ảnh`,
-      {
-        type: "chat",
-        channelId,
-        memberIds: JSON.stringify(chatChannel.memberIds),
-      },
-      "Tin nhắn mới"
+    const { channelId, imagesData, userId } = data;
+    const newMess = await createMessage(data, "image");
+    emitMessage(channelId, newMess, "image");
+    const { receiver, sender } = await getChannelMembers(userId, channelId);
+    await sendNotification(
+      receiver,
+      sender,
+      channelId,
+      "đã gửi cho bạn một ảnh"
     );
   } catch (error) {
     console.log("Error when handling image", error);
   }
 };
-const handleSaveCallhistory = async function ({
-  channelId,
-  senderId,
-  duration,
-}) {
-  const socketIO = Global.socketIO;
+const handleSaveCallhistory = async function (data) {
   try {
-    console.log("data", channelId, senderId, duration);
-    const newMess = {
-      _id: new ObjectId(),
-      userId: senderId,
-      callHistory: { duration },
-      isSeen: false,
-      createdAt: new Date(),
-    };
-    socketIO
-      .to(channelId)
-      .emit("receive-message", { newMess, channelId, type: "callHistory" });
-    const chatChannel = await Channel.findById(channelId);
-    const receiverId = chatChannel.memberIds.find(
-      (memberId) => memberId != senderId
-    );
-    console.log("newMess", newMess);
-    const sender = await User.findById(senderId);
-    const receiver = await User.findById(receiverId);
-    chatChannel.channelMessages.unshift(newMess);
-    chatChannel.lastUpdate = new Date();
-    await chatChannel.save();
+    const { channelId, duration, userId } = data;
+    const newMess = await createMessage(data, "callHistory");
 
+    const { receiver, sender } = await getChannelMembers(userId, channelId);
+
+    emitMessage(channelId, newMess, "callHistory");
     if (duration == 0) {
-      await NotificationController.handleSendNotification(
-        [receiver.FCMtoken],
-        `Bạn đã bỏ lỡ cuộc gọi từ ${sender.nickname}`,
-        {
-          type: "chat",
-          channelId,
-          memberIds: JSON.stringify(chatChannel.memberIds),
-        },
-        "Thông báo"
+      await sendNotification(
+        receiver,
+        sender,
+        channelId,
+        "đã bỏ lỡ cuộc gọi từ"
       );
     }
   } catch (error) {
@@ -255,37 +253,14 @@ const handleSaveCallhistory = async function ({
   }
 };
 const handleSendVideoMessage = async function (data) {
-  const { channelId, videoUrls } = data;
-  const socketIO = Global.socketIO;
-  const userId = this.handshake.query.userId;
+  const { channelId, userId, videoUrls } = data;
   try {
-    const chatChannel = await Channel.findById(channelId);
-    const newMess = {
-      _id: new ObjectId(),
-      userId,
-      videoUrls: videoUrls,
-      createdAt: new Date(),
-    };
-    chatChannel.channelMessages.unshift(newMess);
-    await chatChannel.save();
-    socketIO
-      .to(channelId)
-      .emit("receive-message", { newMess, channelId, type: "video" });
-    const receiverId = chatChannel.memberIds.find(
-      (memberId) => memberId != userId
-    );
-    const receiver = await User.findById(receiverId);
-    const sender = await User.findById(userId);
-    await NotificationController.handleSendNotification(
-      [receiver.FCMtoken],
-      `${sender.nickname} đã gửi cho bạn video`,
-      {
-        type: "chat",
-        channelId,
-        memberIds: JSON.stringify(chatChannel.memberIds),
-      },
-      "Tin nhắn mới"
-    );
+    const newMess = await createMessage(data, "videoMessage");
+    emitMessage(channelId, newMess, "videoMessage");
+
+    const { receiver, sender } = await getChannelMembers(userId, channelId);
+
+    await sendNotification(receiver, sender, channelId, "đã gửi cho bạn video");
   } catch (error) {
     console.log("Error when handling video", error);
   }

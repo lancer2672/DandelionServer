@@ -3,11 +3,12 @@ const Post = require("../../models/post");
 const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
 
-const handleUploadComment = async (data) => {
+const handleUploadComment = async function (data) {
   const socketIO = Global.socketIO;
   const { commentUserId, postCreatorId, postId, content } = data;
   const postCreatorSocketId = Global.onlineUsers[postCreatorId];
-  const commentUserSocketId = Global.onlineUsers[commentUserId];
+
+  console.log("postCreatorSocketId", content);
   try {
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId);
@@ -18,11 +19,15 @@ const handleUploadComment = async (data) => {
       createdAt: new Date(),
     };
     post.comments.push(newComment);
-    await post.save();
+    const savedPost = await post.save();
+    //to get new comment id
+    const savedComment = savedPost.comments[savedPost.comments.length - 1];
+    this.emit("new-comment", { postId, newComment: savedComment });
     if (postCreatorId != commentUserId) {
-      socketIO.to(postCreatorSocketId).emit("new-comment", postId, newComment);
-      socketIO.to(commentUserSocketId).emit("new-comment", postId, newComment);
-
+      socketIO
+        .to(postCreatorSocketId)
+        .emit("new-comment", { postId, newComment });
+      socketIO.to(postCreatorSocketId).emit("new-notification");
       await NotificationController.handleSendNotification(
         [postCreator.FCMtoken],
         `${reactUser.nickname} đã bình luận về bài viết của bạn`,
@@ -35,7 +40,6 @@ const handleUploadComment = async (data) => {
         postCreator._id,
         postId
       );
-      socketIO.to(postCreatorSocketId).emit("new-notification");
     }
   } catch (er) {
     console.log("er", er);
@@ -59,7 +63,7 @@ const handleReactPost = async function (data) {
       ? post.likes.push({ userId: reactUserId })
       : post.likes.splice(userIndex, 1);
     await post.save();
-    socketIO.emit("react-post", postId, reactUserId, isAddedToList);
+    this.emit("react-post", postId, reactUserId, isAddedToList);
 
     if (postCreatorId != reactUserId && isAddedToList) {
       await NotificationController.handleSendNotification(

@@ -3,8 +3,9 @@ const FriendRequest = require("../../models/friend-request");
 const Notification = require("../../models/notification");
 const Global = require("../global");
 
-const handleMarkNotificationAsSeen = async (data) => {
+const handleMarkNotificationAsSeen = async function (data) {
   try {
+    const userId = this.handshake.query.userId;
     const { friendRequestIds, notificationIds } = data;
     const socketIO = Global.socketIO;
     const userSocketId = Global.onlineUsers[userId];
