@@ -2,7 +2,34 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 //Tao model
-
+const CommentSchema = new Schema({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "user",
+  },
+  content: String,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  replies: [
+    {
+      content: String,
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: "user",
+      },
+      // repliedUserId: {
+      //   type: Schema.Types.ObjectId,
+      //   ref: "user",
+      // },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+});
 const PostSchema = new Schema(
   {
     description: {
@@ -26,19 +53,7 @@ const PostSchema = new Schema(
         createdAt: String,
       },
     ],
-    comments: [
-      {
-        userId: {
-          type: Schema.Types.ObjectId,
-          ref: "user",
-        },
-        content: String,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    comments: [CommentSchema],
   },
   { timestamps: true }
 );

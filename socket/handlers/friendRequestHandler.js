@@ -4,6 +4,65 @@ const FriendRequestModel = require("../../models/friend-request");
 const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
 
+const findOrCreateChannel = async (channelName, memberIds) => {
+  try {
+    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
+    if (!channel) {
+      channel = new Channel({
+        channelName,
+        memberIds,
+        channelMessages: [],
+      });
+      await channel.save();
+      console.log("Channel created successfully!");
+    } else {
+      channel.isInWaitingList = true;
+      await channel.save();
+    }
+    return channel;
+  } catch (err) {
+    console.error("Error finding or creating channel", err);
+  }
+};
+const addFriendToFriendList = async (userIdA, userIdB) => {
+  try {
+    const userA = await User.findById(userIdA);
+    const checkIfFriend = userA.friends.some(
+      (friend) => friend.userId == userIdB
+    );
+    if (!checkIfFriend) {
+      userA.friends.push({
+        userId: userIdB,
+        createdAt: new Date().toISOString(),
+      });
+      await userA.save();
+    }
+  } catch (er) {
+    console.log(er);
+  }
+};
+const findExistedPendingFriendRequest = async (senderId, receiverId) => {
+  return await FriendRequestModel.findOne({
+    sender: senderId,
+    receiver: receiverId,
+    status: "pending",
+  });
+};
+const acceptFriendRequest = async (request) => {
+  try {
+    request.status = "accepted";
+    await request.save();
+    const channel = await findOrCreateChannel("New Chat Room", [
+      request.sender,
+      request.receiver,
+    ]);
+    channel.isInWaitingList = false;
+    await channel.save();
+    return channel;
+  } catch (er) {
+    console.log(er);
+  }
+};
 const unFriend = async (socketIO, data) => {
   const { userId, friendId } = data;
   const userSocketId = Global.onlineUsers[userId];
@@ -168,13 +227,14 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
           responseValue: "accept",
           userIds: [sender._id, receiver._id],
         });
-      console.log("Friend request accepted and new chat room created");
+      console.log("Friend request accepted");
       await NotificationController.handleSendNotification(
         [sender.FCMtoken],
         `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
       );
     } else if (responseValue === "decline") {
       request.status = "declined";
+      await request.save();
       socketIO
         .to(onlineUsers[request.sender._id])
         .emit("response-friendRequest", {
@@ -187,7 +247,6 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
           requestId: request._id,
           responseValue: "decline",
         });
-      await request.save();
       console.log("Friend request declined");
     } else {
       console.log("Invalid status value");

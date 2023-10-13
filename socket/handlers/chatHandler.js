@@ -8,65 +8,6 @@ const Global = require("../global");
 
 const fs = require("fs");
 
-const findOrCreateChannel = async (channelName, memberIds) => {
-  try {
-    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
-    if (!channel) {
-      channel = new Channel({
-        channelName,
-        memberIds,
-        channelMessages: [],
-      });
-      await channel.save();
-      console.log("Channel created successfully!");
-    } else {
-      channel.isInWaitingList = true;
-      await channel.save();
-    }
-    return channel;
-  } catch (err) {
-    console.error("Error finding or creating channel", err);
-  }
-};
-const addFriendToFriendList = async (userIdA, userIdB) => {
-  try {
-    const userA = await User.findById(userIdA);
-    const checkIfFriend = userA.friends.some(
-      (friend) => friend.userId == userIdB
-    );
-    if (!checkIfFriend) {
-      userA.friends.push({
-        userId: userIdB,
-        createdAt: new Date().toISOString(),
-      });
-      await userA.save();
-    }
-  } catch (er) {
-    console.log(er);
-  }
-};
-const findExistedPendingFriendRequest = async (senderId, receiverId) => {
-  return await FriendRequestModel.findOne({
-    sender: senderId,
-    receiver: receiverId,
-    status: "pending",
-  });
-};
-const acceptFriendRequest = async (request) => {
-  try {
-    request.status = "accepted";
-    await request.save();
-    const channel = await findOrCreateChannel("New Chat Room", [
-      request.sender,
-      request.receiver,
-    ]);
-    channel.isInWaitingList = false;
-    await channel.save();
-    return channel;
-  } catch (er) {
-    console.log(er);
-  }
-};
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
   socketIO.to(channelId).emit("receive-message", { newMess, channelId, type });
@@ -304,7 +245,6 @@ module.exports = {
   handleNewMessageType,
 
   handleLogin,
-
   handleSetSeenMessages,
 
   handleUserOffline,

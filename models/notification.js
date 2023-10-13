@@ -37,6 +37,10 @@ const NotificationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "post",
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

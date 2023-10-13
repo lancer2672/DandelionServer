@@ -64,6 +64,7 @@ exports.getAllNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({
       receiverId: req.userId,
+      deletedAt: null,
     }).sort({
       createdAt: -1,
     });
@@ -76,5 +77,29 @@ exports.getAllNotifications = async (req, res) => {
     res
       .status(400)
       .json({ success: false, message: "get all notifications failed" });
+  }
+};
+exports.deleteNotification = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const notification = await Notification.findById(notificationId);
+
+    if (!notification) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Notification not found" });
+    }
+
+    notification.deletedAt = new Date();
+    await notification.save();
+
+    res.json({
+      success: true,
+      message: "Notification deleted successfully",
+    });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ success: false, message: "Delete notification failed" });
   }
 };

@@ -38,7 +38,7 @@ const ChannelSchema = new Schema(
         },
         type: {
           type: String,
-          default: "message",
+          default: "text",
         },
         imageUrls: [
           {

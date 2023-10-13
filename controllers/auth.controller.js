@@ -71,6 +71,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
+  console.log("{ username, password }", { username, password });
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res
@@ -104,6 +105,7 @@ exports.login = async (req, res) => {
         }
       });
     }
+    console.log("success");
   } catch (err) {
     res.status(500).json({ message: "SERVER ERROR" });
   }
