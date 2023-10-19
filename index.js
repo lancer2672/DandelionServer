@@ -1,22 +1,36 @@
 const express = require("express");
-process.on("warning", (e) => console.warn(e.stack));
-const app = express();
-const server = require("http").Server(app);
-const socketIO = require("socket.io")(server);
+const http = require("http");
+const socketIO = require("socket.io");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const helmet = require("helmet");
+const compression = require("compression");
+
 const setUpSocket = require("./socket/index");
 const Global = require("./socket/global");
-setUpSocket(socketIO);
-Global.socketIO = socketIO;
-const cors = require("cors");
-require("dotenv").config();
-
 const connectDB = require("./db");
 const mainRoute = require("./routes");
-const path = require("path");
 
+dotenv.config();
 connectDB();
+
+const app = express();
+const server = http.Server(app);
+const socketIOServer = socketIO(server);
+
+setUpSocket(socketIOServer);
+Global.socketIO = socketIOServer;
+
 app.use(express.json());
 app.use(cors());
+app.use(helmet());
+app.use(compression());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/", mainRoute);
-server.listen(process.env.PORT, () => console.log(`server started`));
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});

@@ -12,6 +12,8 @@
   "dependencies": {
     "@voximplant/apiclient-nodejs": "^2.1.0",
     "bcryptjs": "^2.4.3",
+    "compress": "^0.99.0",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.0.3",
@@ -19,6 +21,7 @@
     "express-validator": "^7.0.1",
     "firebase-admin": "^11.10.1",
     "google-auth-library": "^9.0.0",
+    "helmet": "^7.0.0",
     "http": "^0.0.1-security",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.11.0",
@@ -30,6 +33,6 @@
     "socket.io": "^4.6.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.22"
   }
 }
