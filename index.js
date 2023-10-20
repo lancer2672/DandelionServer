@@ -9,11 +9,10 @@ const compression = require("compression");
 
 const setUpSocket = require("./socket/index");
 const Global = require("./socket/global");
-const connectDB = require("./db");
+const mongoDBInstance = require("./db");
 const mainRoute = require("./routes");
 
 dotenv.config();
-connectDB();
 
 const app = express();
 const server = http.Server(app);
