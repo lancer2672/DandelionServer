@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
-const { countConnect } = require("./helpers/checkConnect");
 
-const connectionString = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@dandelion.bswdcrh.mongodb.net/?retryWrites=true&w=majority`;
+const { countConnect } = require("./helpers/checkConnect");
+const config = require("./config");
+const connectionString = `mongodb+srv://${config.db.user_name}:${config.db.password}@dandelion.bswdcrh.mongodb.net/?retryWrites=true&w=majority`;
 class Database {
   constructor() {
     this.connect();
