@@ -1,14 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const AuthController = require("../controllers/auth.controller");
-const { body } = require("express-validator");
 const verifyToken = require("../middleware/verifyToken");
+const errorHandler = require("../middleware/errorHandler");
+
+const { body } = require("express-validator");
 
 router.post(
   "/login",
   body("username").exists().withMessage("username is missing"),
   body("password").exists().withMessage("password is missing"),
-  AuthController.login
+  errorHandler(AuthController.login)
 );
 
 router.put(
@@ -16,7 +18,7 @@ router.put(
   verifyToken,
   body("currentPassword").exists().withMessage("currentPassword is missing"),
   body("newPassword").exists().withMessage("newPassword is missing"),
-  AuthController.changePassword
+  errorHandler(AuthController.changePassword)
 );
 
 router.post("/google", AuthController.loginWithGoogle);
@@ -25,18 +27,21 @@ router.post(
   "/register",
   body("password").exists().withMessage("password is missing"),
   body("email").exists().withMessage("email is missing"),
-  AuthController.register
+  errorHandler(AuthController.register)
 );
 
-router.post("/refresh-token", AuthController.refreshToken);
+router.post("/refresh-token", errorHandler(AuthController.refreshToken));
 
-router.post("/send-email-verification", AuthController.sendEmailVerification);
-router.get("/verify-email", AuthController.verifyEmail);
+router.post(
+  "/send-email-verification",
+  errorHandler(AuthController.sendEmailVerification)
+);
+router.get("/verify-email", errorHandler(AuthController.verifyEmail));
 router.put(
   "/reset-password",
   body("newPassword").exists().withMessage("newPassword is missing"),
   body("currentPassword").exists().withMessage("currentPassword is missing"),
-  AuthController.resetPassword
+  errorHandler(AuthController.resetPassword)
 );
 
 module.exports = router;

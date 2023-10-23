@@ -27,7 +27,23 @@ app.use(cors());
 app.use(helmet());
 app.use(compression());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/", mainRoute);
+
+app.use((req, res, next) => {
+  const error = new Error("Not found");
+  error.status = 404;
+  next(error);
+});
+
+app.use((error, req, res, next) => {
+  const statusCode = error.status || 500;
+  return res.status(statusCode).json({
+    status: "error",
+    code: statusCode,
+    message: error.message || "Internal Server Error",
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 
