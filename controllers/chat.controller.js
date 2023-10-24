@@ -1,5 +1,4 @@
 const { default: mongoose } = require("mongoose");
-const ObjectId = require("mongoose").Types.ObjectId;
 const Channel = require("../models/channel");
 const User = require("../models/user");
 const { validationResult } = require("express-validator");
