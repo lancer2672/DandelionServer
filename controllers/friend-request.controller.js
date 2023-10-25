@@ -1,5 +1,11 @@
 const FriendRequestModel = require("../models/friend-request");
 const User = require("../models/user");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
 exports.getFriendRequests = async (req, res) => {
   try {
@@ -8,14 +14,12 @@ exports.getFriendRequests = async (req, res) => {
       receiver: { $in: [userId] },
       status: "pending",
     });
-    res.json({
-      message: "success",
+    new OK({
+      message: "Success",
       data: { requests },
-    });
+    }).send(res);
   } catch (err) {
-    res
-      .status(400)
-      .json({ success: false, message: "cannot get friend requests" });
+    throw new InternalServerError();
   }
 };
 exports.checkFriendStatus = async (req, res) => {
@@ -27,11 +31,10 @@ exports.checkFriendStatus = async (req, res) => {
     });
 
     if (isFriend) {
-      res.json({
-        message: "success",
+      new OK({
+        message: "Success",
         data: { result: "friend" },
-      });
-      console.log("friendStatus: friend");
+      }).send(res);
     } else {
       const hasAPendingRequest1 = await FriendRequestModel.findOne({
         receiver: receiverId,
@@ -40,11 +43,10 @@ exports.checkFriendStatus = async (req, res) => {
       });
 
       if (hasAPendingRequest1) {
-        res.json({
-          message: "success",
+        new OK({
+          message: "Success",
           data: { result: "sentRequest" },
-        });
-        console.log("friendStatus: sentRequest");
+        }).send(res);
       } else {
         const hasAPendingRequest2 = await FriendRequestModel.findOne({
           receiver: req.userId,
@@ -53,22 +55,19 @@ exports.checkFriendStatus = async (req, res) => {
         });
 
         if (hasAPendingRequest2) {
-          res.json({
-            message: "success",
+          new OK({
+            message: "Success",
             data: { result: "accept" },
-          });
-          console.log("friendStatus: accept");
+          }).send(res);
         } else {
-          res.json({
-            message: "success",
+          new OK({
+            message: "Success",
             data: { result: "sendFriendRequest" },
-          });
-          console.log("friendStatus: sendFriendRequest");
+          }).send(res);
         }
       }
     }
   } catch (err) {
-    console.log("err", err);
-    res.status(500).json({ success: false, message: "error" });
+    throw new InternalServerError();
   }
 };

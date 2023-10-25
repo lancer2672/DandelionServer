@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const SearchHistory = require("../models/search-history");
 const voximplantService = require("../services/voximplant");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
 const getDistinctSearchedUsers = async (userId) => {
   const result = await SearchHistory.aggregate([
@@ -17,21 +23,20 @@ const getDistinctSearchedUsers = async (userId) => {
 
 exports.updateUser = async (req, res) => {
   try {
+    const { nickname, email, gender, phoneNumber, dateOfBirth, avatar } =
+      req.body;
     const user = await User.findById(req.userId);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      throw new BadRequestError("User not found");
     }
 
     const userToUpdate = {
-      nickname: req.body.nickname || user.nickname,
-      email: req.body.email || user.email,
-      gender: req.body.gender || user.gender,
-      phoneNumber: req.body.phoneNumber || user.phoneNumber,
-      dateOfBirth: req.body.dateOfBirth || user.dateOfBirth,
-      avatar: req.file ? req.file.path : user.avatar,
+      nickname: nickname || user.nickname,
+      email: email || user.email,
+      gender: gender || user.gender,
+      phoneNumber: phoneNumber || user.phoneNumber,
+      dateOfBirth: dateOfBirth || user.dateOfBirth,
+      avatar: avatar || user.avatar,
     };
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.userId },
@@ -45,21 +50,14 @@ exports.updateUser = async (req, res) => {
     };
     await voximplantService.setUserInfo(updatedVoximplantUser);
     if (!updatedUser) {
-      return res.status(401).json({
-        success: false,
-        message: "You are not authorized or user not found",
-      });
+      throw new BadRequestError("Update user failed");
     }
-
-    res.json({
-      success: true,
-      message: "User updated successfully",
+    new OK({
+      message: "Success",
       data: { user: updatedUser },
-    });
+    }).send(res);
   } catch (err) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot update user information" });
+    throw new InternalServerError("Cannot update user information");
   }
 };
 
@@ -68,26 +66,19 @@ exports.addUserToSearchHistory = async (req, res) => {
     const { userId } = req.body;
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      throw new BadRequestError("User not found");
     }
-
     await SearchHistory.updateOne(
       { user: req.userId },
       { $push: { searchedUsers: { userId, searchTime: new Date() } } },
       { upsert: true }
     );
-
-    return res.json({
-      success: true,
-      message: "User added to search history successfully",
-    });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    console.log("err", err);
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot add user to search history" });
+    throw new InternalServerError("Cannot add user to search history");
   }
 };
 
@@ -96,26 +87,20 @@ exports.removeUserFromSearchHistory = async (req, res) => {
     const { userId } = req.params;
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      throw new BadRequestError("User not found");
     }
 
     await SearchHistory.updateOne(
       { user: req.userId, "searchedUsers.userId": userId },
       { $set: { "searchedUsers.$.deletedAt": new Date() } }
     );
-
-    return res.json({
-      success: true,
-      message: "User removed from search history successfully",
-    });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
     console.log("err", err);
-    return res.status(400).json({
-      success: false,
-      message: "Cannot remove user from search history",
-    });
+    throw new InternalServerError("Cannot remove user from search history");
   }
 };
 
@@ -137,16 +122,12 @@ exports.searchUsers = async (req, res) => {
         return userObject;
       }
     });
-    return res.json({
-      success: true,
-      message: "Users fetched successfully",
+    new OK({
+      message: "Success",
       data: mappedUser2,
-    });
+    }).send(res);
   } catch (err) {
-    console.log("err", err);
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot get users" });
+    throw new InternalServerError();
   }
 };
 
@@ -183,29 +164,24 @@ exports.getRecentSearchHistory = async (req, res) => {
     const userIds = searchHistory.map((item) => item._id);
     const users = await User.find({ _id: { $in: userIds } });
 
-    return res.json({
-      success: true,
-      message: "Recent search history fetched successfully",
+    new OK({
+      message: "Success",
       data: users,
-    });
+    }).send(res);
   } catch (err) {
-    console.log("err", err);
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot get recent search history" });
+    throw new InternalServerError();
   }
 };
 
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
-    return res.json({
-      success: true,
-      message: "User fetched successfully",
+    new OK({
+      message: "Success",
       data: { user },
-    });
+    }).send(res);
   } catch (err) {
-    return res.status(400).json({ success: false, message: "Cannot get user" });
+    throw new InternalServerError();
   }
 };
 
@@ -215,15 +191,12 @@ exports.getListUser = async (req, res) => {
     const users = await User.find({ _id: { $in: listIds } }).select(
       "-password"
     );
-    return res.json({
-      success: true,
-      message: "Users fetched successfully",
+    new OK({
+      message: "Success",
       data: { users },
-    });
+    }).send(res);
   } catch (err) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot get users" });
+    throw new InternalServerError();
   }
 };
 
@@ -233,16 +206,12 @@ exports.saveFCMtoken = async (req, res) => {
     const { token } = req.body;
     user.FCMtoken = token;
     await user.save();
-    res.json({
-      success: true,
-      message: "save token success",
-    });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    console.log("error when save user's FCM token", err);
-    res.json({
-      success: false,
-      message: "save token failed",
-    });
+    throw new InternalServerError();
   }
 };
 
@@ -250,22 +219,15 @@ exports.getAllFriends = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("friends.userId");
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      throw new BadRequestError("User not found");
     }
     const friends = user.friends.map((friend) => friend.userId);
     console.log("friends", friends);
-
-    return res.json({
-      success: true,
-      message: "Friends fetched successfully",
+    new OK({
+      message: "Success",
       data: { friends },
-    });
+    }).send(res);
   } catch (err) {
-    console.error(err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Cannot get friends" });
+    throw new InternalServerError();
   }
 };

@@ -1,6 +1,13 @@
 const FriendRequest = require("../models/friend-request");
 const admin = require("../firebase/firebaseAdmin");
 const Notification = require("../models/notification");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+
 exports.handleSendNotification = async (
   tokenList,
   message,
@@ -48,15 +55,12 @@ exports.sendNotification = async (req, res) => {
   try {
     const { tokenList, message, title } = req.body;
     handleSendNotification(tokenList, message, title);
-    res.json({
-      success: true,
-      message: "Send notification successfully",
-    });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: "Cannot send notification",
-    });
+    throw new InternalServerError();
   }
 };
 
@@ -68,15 +72,12 @@ exports.getAllNotifications = async (req, res) => {
     }).sort({
       createdAt: -1,
     });
-    res.json({
-      success: true,
-      message: "success",
+    new OK({
+      message: "Success",
       data: { notifications },
-    });
+    }).send(res);
   } catch (err) {
-    res
-      .status(400)
-      .json({ success: false, message: "get all notifications failed" });
+    throw new InternalServerError();
   }
 };
 exports.deleteNotification = async (req, res) => {
@@ -85,21 +86,16 @@ exports.deleteNotification = async (req, res) => {
     const notification = await Notification.findById(notificationId);
 
     if (!notification) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Notification not found" });
+      throw new BadRequestError("Notification not found");
     }
 
     notification.deletedAt = new Date();
     await notification.save();
-
-    res.json({
-      success: true,
-      message: "Notification deleted successfully",
-    });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    res
-      .status(400)
-      .json({ success: false, message: "Delete notification failed" });
+    throw new InternalServerError();
   }
 };

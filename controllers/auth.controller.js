@@ -7,6 +7,7 @@ const {
   UnauthorizedError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const { OAuth2Client } = require("google-auth-library");
 const { validationResult } = require("express-validator");
 const { sendVerificationEmail } = require("../services/mailer");
@@ -37,7 +38,7 @@ exports.register = async (req, res) => {
     emailVerified: true,
   });
   if (existUser) {
-    return res.status(400).json({ message: "Email is already taken" });
+    throw new BadRequestError("Email is already taken");
   }
   bcrypt.hash(password, 12, async (err, passwordHash) => {
     if (err) {
@@ -58,11 +59,10 @@ exports.register = async (req, res) => {
       } catch (err) {
         throw new InternalServerError();
       }
-      return res.json({
-        success: "true",
-        message: "Registered successfully",
+      new CreatedResponse({
+        message: "Register successfully",
         data: { user: newUser },
-      });
+      }).send(res);
     }
   });
 };
@@ -84,19 +84,22 @@ exports.login = async (req, res) => {
     } else {
       bcrypt.compare(password, existUser.password, async (err, compareRes) => {
         if (err) {
-          res
-            .status(502)
-            .json({ message: "Error while checking user's password" });
+          throw new InternalServerError("Error while checking user password");
         } else if (compareRes) {
           const accessToken = generateAccessToken(existUser._id);
           const refreshToken = generateRefreshToken(existUser._id);
           existUser.refreshToken = refreshToken;
           await existUser.save();
           delete existUser.password;
-          res.status(200).json({
+
+          new OK({
             message: "User logged in successfully",
             data: { token: accessToken, user: existUser },
-          });
+          }).send(res);
+          // res.status(200).json({
+          //   message: "User logged in successfully",
+          //   data: { token: accessToken, user: existUser },
+          // });
         } else {
           throw new BadRequestError("Incorect password");
         }
@@ -104,6 +107,7 @@ exports.login = async (req, res) => {
     }
     console.log("success");
   } catch (err) {
+    console.log("err", err);
     throw new InternalServerError();
   }
 };
@@ -149,10 +153,10 @@ exports.loginWithGoogle = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({
+    new OK({
       message: "User logged in successfully",
       data: { token: accessToken, user },
-    });
+    }).send(res);
   } catch (err) {
     throw new InternalServerError();
   }
@@ -164,14 +168,28 @@ exports.refreshToken = async (req, res) => {
   if (!refreshToken) {
     throw new UnauthorizedError();
   }
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: "Forbidden" });
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      if (err) {
+        if (err) {
+          if (err.name === "TokenExpiredError") {
+            user.refreshToken = null;
+            user.refreshTokensUsed.push(refreshToken);
+            await user.save();
+            return res.status(401).json({ message: "Token expired" });
+          } else {
+            return res.status(403).json({ message: "Forbidden" });
+          }
+        }
+      }
+      const userId = decoded.userId;
+      const newAccessToken = generateAccessToken(userId);
+
+      res.status(200).json({ message: "success", accessToken: newAccessToken });
     }
-    const userId = decoded.userId;
-    const newAccessToken = generateAccessToken(userId);
-    res.status(200).json({ message: "success", accessToken: newAccessToken });
-  });
+  );
 };
 exports.verifyEmail = async (req, res) => {
   try {
@@ -199,8 +217,7 @@ exports.verifyEmail = async (req, res) => {
     user.emailVerificationCodeExpires = null;
 
     await user.save();
-
-    res.json({ success: true });
+    new OK({}).send(res);
   } catch (er) {
     console.log("er", er);
     throw new BadRequestError("Failed");
@@ -229,8 +246,7 @@ exports.sendEmailVerification = async (req, res) => {
     user.emailVerificationCodeExpires = expires;
     await user.save();
     const result = await sendVerificationEmail(email, code);
-
-    res.json({ data: {} });
+    new OK().send(res);
   } catch (er) {
     throw new InternalServerError();
   }
@@ -262,11 +278,10 @@ exports.resetPassword = async (req, res) => {
         await voximplantService.setUserInfo(updatedVoximplantUser);
         user.emailVerificationCode = null;
         user.emailVerificationCodeExpires = null;
-        return res.json({
-          success: "true",
+        new OK({
           message: "Password reset successfully",
           data: { user },
-        });
+        }).send(res);
       }
     });
   } catch (err) {
@@ -302,11 +317,10 @@ exports.changePassword = async (req, res) => {
           userPassword: newPassword,
         };
         await voximplantService.setUserInfo(updatedVoximplantUser);
-        return res.json({
-          success: "true",
+        new OK({
           message: "Password changed successfully",
           data: { user },
-        });
+        }).send(res);
       }
     });
   } catch (err) {

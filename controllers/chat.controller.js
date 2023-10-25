@@ -2,6 +2,12 @@ const { default: mongoose } = require("mongoose");
 const Channel = require("../models/channel");
 const User = require("../models/user");
 const { validationResult } = require("express-validator");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
 exports.getChannels = async (req, res) => {
   try {
@@ -9,13 +15,12 @@ exports.getChannels = async (req, res) => {
     const channels = await Channel.find({ memberIds: { $in: [userId] } }).sort({
       lastUpdate: -1,
     });
-    res.json({
-      success: true,
-      message: "success",
+    new OK({
+      message: "Success",
       data: { channels },
-    });
+    }).send(res);
   } catch (err) {
-    res.status(400).json({ success: false, message: "cannot get channels" });
+    throw new InternalServerError();
   }
 };
 exports.GetChannelMember = async (req, res) => {
@@ -25,73 +30,77 @@ exports.GetChannelMember = async (req, res) => {
     const members = await User.find({
       _id: { $in: memberIds, $ne: req.userId },
     }).select("-password");
-    res.json({ success: true, data: { members } });
+    new OK({
+      message: "Success",
+      data: { members },
+    }).send(res);
   } catch (err) {
-    res.status(400).json({ success: false, message: "cannot get members" });
+    throw new InternalServerError();
   }
 };
 
 exports.getChannelMessages = async (req, res) => {
-  const channelId = req.params.channelId;
-  const channel = await Channel.findById(channelId);
+  try {
+    const channelId = req.params.channelId;
+    const channel = await Channel.findById(channelId);
 
-  if (!channel) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Channel not found" });
-  }
+    if (!channel) {
+      throw new BadRequestError("Channel not found");
+    }
 
-  const recentMessages = await Channel.aggregate([
-    { $match: { _id: mongoose.Types.ObjectId(channelId) } },
-    //get data from channelMessages property
-    { $unwind: "$channelMessages" },
-    { $sort: { "channelMessages.createdAt": -1 } },
-    // { $limit: 7 },
-    {
-      $group: {
-        _id: "$_id",
-        channelMessages: { $push: "$channelMessages" },
+    const recentMessages = await Channel.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(channelId) } },
+      //get data from channelMessages property
+      { $unwind: "$channelMessages" },
+      { $sort: { "channelMessages.createdAt": -1 } },
+      // { $limit: 7 },
+      {
+        $group: {
+          _id: "$_id",
+          channelMessages: { $push: "$channelMessages" },
+        },
       },
-    },
-    { $project: { _id: 0, channelMessages: 1 } },
-  ]);
-  res.json({
-    success: true,
-    message: "Get messages successfully",
-    data: {
-      messages:
-        recentMessages.length == 0 ? [] : recentMessages[0].channelMessages,
-    },
-  });
+      { $project: { _id: 0, channelMessages: 1 } },
+    ]);
+    new OK({
+      message: "Success",
+      data: {
+        messages:
+          recentMessages.length == 0 ? [] : recentMessages[0].channelMessages,
+      },
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
+  }
 };
 
 exports.getLastMessage = async (req, res) => {
-  const channelId = req.params.channelId;
-  const channel = await Channel.findById(channelId);
-  let lastMessage = null;
-  if (channel.channelMessages.length > 0) {
-    lastMessage = channel.channelMessages[0];
+  try {
+    const channelId = req.params.channelId;
+    const channel = await Channel.findById(channelId);
+    let lastMessage = null;
+    if (channel.channelMessages.length > 0) {
+      lastMessage = channel.channelMessages[0];
+    }
+    if (!channel) {
+      throw new BadRequestError("Channel not found");
+    }
+    new OK({
+      message: "Success",
+      data: {
+        lastMessage,
+        channelId,
+      },
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
   }
-  if (!channel) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Channel not found" });
-  }
-  res.json({
-    success: true,
-    data: {
-      lastMessage,
-      channelId,
-    },
-  });
 };
 
 exports.findOrCreateChannel = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res
-      .status(400)
-      .json({ message: "Invalid information", errors: errors.array() });
+    throw new BadRequestError("Channel not found");
   }
   const { channelName = "", memberIds } = req.body;
   try {
@@ -105,17 +114,13 @@ exports.findOrCreateChannel = async (req, res) => {
       });
       await channel.save();
     }
-    res.json({
-      success: true,
+    new OK({
+      message: "Success",
       data: {
         channel,
       },
-    });
+    }).send(res);
   } catch (err) {
-    console.error("Error finding or creating channel", err);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while finding or creating the channel",
-    });
+    throw new InternalServerError();
   }
 };

@@ -2,16 +2,22 @@ const fs = require("fs");
 const User = require("../models/user");
 const Post = require("../models/post");
 const { validationResult } = require("express-validator");
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+
 exports.getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find({}).sort({ createdAt: -1 });
-    res.json({
-      success: true,
-      message: "success",
-      data: { posts: posts },
-    });
+    new OK({
+      message: "Get all posts success",
+      data: { posts },
+    }).send(res);
   } catch (err) {
-    res.status(400).json({ success: false, message: "cannot get all posts" });
+    throw new BadRequestError("Cannot get all posts");
   }
 };
 exports.getPostByUserId = async (req, res) => {
@@ -21,21 +27,14 @@ exports.getPostByUserId = async (req, res) => {
     const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
 
     if (posts.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No posts found for the specified user.",
-      });
+      throw new BadRequestError("No post found for the specified user");
     }
-
-    res.json({
-      success: true,
-      message: "Success",
-      data: { posts: posts },
-    });
+    new OK({
+      message: "Get all posts success",
+      data: { posts },
+    }).send(res);
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to get user posts." });
+    throw new InternalServerError();
   }
 };
 
@@ -45,18 +44,14 @@ exports.getPostById = async (req, res) => {
     const post = await Post.findById(postId);
 
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "No post found ",
-      });
+      throw new BadRequestError("No post found");
     }
-    res.json({
-      success: true,
-      message: "Success",
-      data: { post: post },
-    });
+    new OK({
+      message: "Get posts success",
+      data: { post },
+    }).send(res);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to get post." });
+    throw new InternalServerError();
   }
 };
 exports.handleReactPost = async (req, res) => {
@@ -69,12 +64,12 @@ exports.handleReactPost = async (req, res) => {
       post.likes = post.likes.filter((item) => item.userId != req.userId);
     }
     await post.save();
-    return res.json({ sucess: true, message: "success" });
+    new OK({
+      message: "React success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    return res.status(401).json({
-      sucess: false,
-      message: "failed",
-    });
+    throw new BadRequestError("React failed");
   }
 };
 
@@ -87,16 +82,12 @@ exports.handleDeleteComment = async (req, res) => {
     );
     post.comments = newComments;
     await post.save();
-    return res.json({
-      sucess: true,
-      message: "success",
+    new OK({
+      message: "Success",
       data: { updatedComments: post.comments },
-    });
+    }).send(res);
   } catch (err) {
-    return res.status(401).json({
-      sucess: false,
-      message: "failed",
-    });
+    throw new BadRequestError("Upload comment failed");
   }
 };
 
@@ -109,28 +100,24 @@ exports.handleCommentPost = async (req, res) => {
     };
     post.comments.push(newComment);
     await post.save();
-    res.json({
-      sucess: true,
-      message: "success",
+    new OK({
+      message: "Success",
       data: { updatedPost: post },
-    });
+    }).send(res);
   } catch (err) {
-    res.status(401).json({
-      sucess: false,
-      message: "failed",
-    });
+    throw new InternalServerError();
   }
 };
 
 exports.handleUpdatePost = async (req, res) => {
-  const { description } = req.body;
+  const { description, imageUrl } = req.body;
   try {
     let updatedPost = {};
     if (description) {
       updatedPost.description = description;
     }
-    if (req.file) {
-      updatedPost.image = req.file.path;
+    if (imageUrl) {
+      updatedPost.image = imageUrl;
     }
     updatedPost = await Post.findOneAndUpdate(
       { _id: req.params.id },
@@ -140,59 +127,52 @@ exports.handleUpdatePost = async (req, res) => {
       }
     );
     if (!updatedPost) {
-      return res.status(401).json({
-        sucess: false,
-        message: "You are not authorized or post not found ",
-      });
+      throw new UnauthorizedError();
     }
-    res.json({
-      sucess: true,
-      message: "success",
+    new OK({
+      message: "Success",
       data: { updatedPost },
-    });
+    }).send(res);
   } catch (err) {
-    console.log(err);
-    return res.status(400).json({ sucess: false, message: "Error!" });
+    throw new InternalServerError();
   }
 };
 
 exports.handleDeletePost = async (req, res) => {
   try {
     await Post.deleteOne({ _id: req.params.id });
-    return res.json({ success: true, message: "excellent progress" });
+    new OK({
+      message: "Success",
+      data: {},
+    }).send(res);
   } catch (err) {
-    return res
-      .status(400)
-      .json({ success: false, message: "cannot delete this post!" });
+    throw new InternalServerError("Cannot delete this post");
   }
 };
 
 exports.handleCreatePost = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res
-      .status(400)
-      .json({ message: "Invalid information", errors: errors.array() });
+    throw new BadRequestError("Invalid information");
   }
-  const { description } = req.body;
-  console.log("called");
+  const { description, imageUrl } = req.body;
+  console.log("imageUrl", imageUrl);
   try {
     const newPost = new Post({
       description: description || " ",
       user: req.userId,
       comments: [],
       likes: [],
-      image: req.file?.path || null,
+      image: imageUrl,
     });
     const savedPost = await newPost.save();
     console.log("savedPost", savedPost);
-    res.json({
-      success: true,
-      message: "create post successfully",
+
+    new OK({
+      message: "Success",
       data: { newPost: savedPost },
-    });
+    }).send(res);
   } catch (err) {
-    console.log("er", err);
-    res.status(400).json({ success: false, message: "create post failed" });
+    throw new InternalServerError("Create post failed");
   }
 };

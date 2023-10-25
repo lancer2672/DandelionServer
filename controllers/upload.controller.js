@@ -1,12 +1,36 @@
-exports.handleUpload = async (req, res) => {
+const {
+  BadRequestError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../classes/error/ErrorResponse");
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+
+exports.handleUploadImage = async (req, res) => {
   try {
-    if (req.file) {
-      res.json({ message: "Success", data: { fileUrl: req.file.path } });
+    if (req.files) {
+      const fileUrls = req.files.map((file) => file.path);
+      new OK({
+        message: "User logged in successfully",
+        data: { fileUrls: fileUrls },
+      }).send(res);
     } else {
-      res.status(400).json({ message: "No file uploaded" });
+      throw new BadRequestError("No files uploaded");
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Server error" });
+    throw new InternalServerError();
+  }
+};
+exports.handleUploadVideo = async (req, res) => {
+  try {
+    if (req.file) {
+      new OK({
+        message: "User logged in successfully",
+        data: { fileUrl: req.file.path },
+      }).send(res);
+    } else {
+      throw new BadRequestError("No files uploaded");
+    }
+  } catch (error) {
+    throw new InternalServerError();
   }
 };

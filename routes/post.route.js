@@ -1,32 +1,53 @@
 const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
-const upload = require("../middleware/upload");
+const { uploadImage } = require("../middleware/upload");
 const { body } = require("express-validator");
+const errorHandler = require("../middleware/errorHandler");
 
 const PostController = require("../controllers/post.controller");
 
-router.get("/all", verifyToken, PostController.getAllPosts);
-router.get("/:userId", verifyToken, PostController.getPostByUserId);
-router.get("/", verifyToken, PostController.getPostById);
+router.get("/all", verifyToken, errorHandler(PostController.getAllPosts));
+router.get(
+  "/:userId",
+  verifyToken,
+  errorHandler(PostController.getPostByUserId)
+);
+router.get("/", verifyToken, errorHandler(PostController.getPostById));
 
-router.delete("/comment/:id", verifyToken, PostController.handleDeleteComment);
-router.put("/react/:id", verifyToken, PostController.handleReactPost);
-router.put("/comment/:id", verifyToken, PostController.handleCommentPost);
+router.delete(
+  "/comment/:id",
+  verifyToken,
+  errorHandler(PostController.handleDeleteComment)
+);
+router.put(
+  "/react/:id",
+  verifyToken,
+  errorHandler(PostController.handleReactPost)
+);
+router.put(
+  "/comment/:id",
+  verifyToken,
+  errorHandler(PostController.handleCommentPost)
+);
 
 router.put(
   "/:id",
   verifyToken,
-  upload.single("updateImage"),
-  PostController.handleUpdatePost
+  //TODO
+  errorHandler(PostController.handleUpdatePost)
 );
-router.delete("/:id", verifyToken, PostController.handleDeletePost);
+router.delete(
+  "/:id",
+  verifyToken,
+  errorHandler(PostController.handleDeletePost)
+);
 router.post(
   "/create",
   verifyToken,
 
-  upload.single("postImage"),
-  PostController.handleCreatePost
+  //TODO
+  errorHandler(PostController.handleCreatePost)
 );
 
 module.exports = router;
