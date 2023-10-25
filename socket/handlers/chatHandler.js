@@ -41,31 +41,18 @@ const sendNotification = async (
 const createMessage = async function (data, messageType) {
   const { channelId, userId } = data;
   let newMess = { userId, isSeen: false, createdAt: new Date() };
-
   switch (messageType) {
     case "text":
       newMess.message = data.newMessage;
       break;
     case "image":
-      const imageUrls = [];
-
-      for (let imageData of data.imagesData) {
-        const fileName = Date.now() + "-" + userId + ".png";
-        const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
-        fs.writeFileSync("uploads/" + fileName, base64Data, "base64");
-        const imageUrl = "/uploads/" + fileName;
-        imageUrls.push(imageUrl);
-      }
-      newMess.imageUrls = imageUrls;
-
+      newMess.imageUrls = data.imageUrls || [];
       break;
     case "callHistory":
       newMess.callHistory = { duration: data.duration };
-
       break;
     case "videoMessage":
       newMess.videoUrls = data.videoUrls;
-
       break;
     default:
       throw new Error("Invalid message type");
@@ -76,7 +63,6 @@ const createMessage = async function (data, messageType) {
   chatChannel.channelMessages.unshift(newMess);
   chatChannel.lastUpdate = new Date();
   const savedChatChannel = await chatChannel.save();
-
   // Get the last message in the array, which is the one we just added
   const savedMessage = savedChatChannel.channelMessages[0];
 
@@ -121,6 +107,7 @@ const handleSetSeenMessages = async function ({ channelId }) {
 
 const handleNewMessageType = function (data) {
   const userId = this.handshake.query.userId;
+  console.log("data", data);
   switch (data.type) {
     case "text":
       handleSendMessage({ ...data, userId });
@@ -141,7 +128,6 @@ const handleNewMessageType = function (data) {
 
 const handleSendMessage = async function (data) {
   try {
-    const socketIO = Global.socketIO;
     const { channelId, userId } = data;
     const newMess = await createMessage(data, "text");
 
@@ -159,7 +145,7 @@ const handleSendMessage = async function (data) {
 };
 const handleSendImage = async function (data) {
   try {
-    const { channelId, imagesData, userId } = data;
+    const { channelId, userId } = data;
     const newMess = await createMessage(data, "image");
     emitMessage(channelId, newMess, "image");
     const { receiver, sender } = await getChannelMembers(userId, channelId);
@@ -194,11 +180,10 @@ const handleSaveCallhistory = async function (data) {
   }
 };
 const handleSendVideoMessage = async function (data) {
-  const { channelId, userId, videoUrls } = data;
+  const { channelId, userId } = data;
   try {
     const newMess = await createMessage(data, "videoMessage");
     emitMessage(channelId, newMess, "videoMessage");
-
     const { receiver, sender } = await getChannelMembers(userId, channelId);
 
     await sendNotification(receiver, sender, channelId, "đã gửi cho bạn video");
