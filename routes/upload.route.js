@@ -8,7 +8,7 @@ const router = express.Router();
 router.post(
   "/image",
   verifyToken,
-  uploadImage.single("image"),
+  uploadImage.array("image"),
   UploadController.handleUploadImage
 );
 router.post(

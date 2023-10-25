@@ -1,12 +1,24 @@
 const multer = require("multer");
-var storage = multer.diskStorage({
+
+var imageStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads");
+    cb(null, "upload/images");
   },
   filename: function (req, file, cb) {
     cb(null, file.fieldname + "-" + Date.now());
   },
 });
 
-var upload = multer({ storage: storage });
-module.exports = upload;
+var videoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "upload/videos");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + "-" + Date.now());
+  },
+});
+
+var uploadImage = multer({ storage: imageStorage });
+var uploadVideo = multer({ storage: videoStorage });
+
+module.exports = { uploadImage, uploadVideo };
