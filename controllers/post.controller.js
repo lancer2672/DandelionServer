@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const {
   BadRequestError,
   UnauthorizedError,
+  NotFoundError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
@@ -27,7 +28,7 @@ exports.getPostByUserId = async (req, res) => {
     const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
 
     if (posts.length === 0) {
-      throw new BadRequestError("No post found for the specified user");
+      throw new NotFoundError("No post found for the specified user");
     }
     new OK({
       message: "Get all posts success",
@@ -44,7 +45,7 @@ exports.getPostById = async (req, res) => {
     const post = await Post.findById(postId);
 
     if (!post) {
-      throw new BadRequestError("No post found");
+      throw new NotFoundError("No post found");
     }
     new OK({
       message: "Get posts success",

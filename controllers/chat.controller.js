@@ -5,6 +5,7 @@ const { validationResult } = require("express-validator");
 const {
   BadRequestError,
   UnauthorizedError,
+  NotFoundError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
@@ -45,7 +46,7 @@ exports.getChannelMessages = async (req, res) => {
     const channel = await Channel.findById(channelId);
 
     if (!channel) {
-      throw new BadRequestError("Channel not found");
+      throw new NotFoundError("Channel not found");
     }
 
     const recentMessages = await Channel.aggregate([
@@ -83,7 +84,7 @@ exports.getLastMessage = async (req, res) => {
       lastMessage = channel.channelMessages[0];
     }
     if (!channel) {
-      throw new BadRequestError("Channel not found");
+      throw new NotFoundError("Channel not found");
     }
     new OK({
       message: "Success",
@@ -100,7 +101,7 @@ exports.getLastMessage = async (req, res) => {
 exports.findOrCreateChannel = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new BadRequestError("Channel not found");
+    throw new NotFoundError("Channel not found");
   }
   const { channelName = "", memberIds } = req.body;
   try {

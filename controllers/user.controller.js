@@ -6,6 +6,7 @@ const {
   BadRequestError,
   UnauthorizedError,
   InternalServerError,
+  NotFoundError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
@@ -25,9 +26,10 @@ exports.updateUser = async (req, res) => {
   try {
     const { nickname, email, gender, phoneNumber, dateOfBirth, avatar } =
       req.body;
+    console.log("Avatar", avatar);
     const user = await User.findById(req.userId);
     if (!user) {
-      throw new BadRequestError("User not found");
+      throw new NotFoundError("User not found");
     }
 
     const userToUpdate = {
@@ -66,7 +68,7 @@ exports.addUserToSearchHistory = async (req, res) => {
     const { userId } = req.body;
     const user = await User.findById(userId);
     if (!user) {
-      throw new BadRequestError("User not found");
+      throw new NotFoundError("User not found");
     }
     await SearchHistory.updateOne(
       { user: req.userId },
@@ -87,7 +89,7 @@ exports.removeUserFromSearchHistory = async (req, res) => {
     const { userId } = req.params;
     const user = await User.findById(userId);
     if (!user) {
-      throw new BadRequestError("User not found");
+      throw new NotFoundError("User not found");
     }
 
     await SearchHistory.updateOne(
@@ -219,7 +221,7 @@ exports.getAllFriends = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("friends.userId");
     if (!user) {
-      throw new BadRequestError("User not found");
+      throw new NotFoundError("User not found");
     }
     const friends = user.friends.map((friend) => friend.userId);
     console.log("friends", friends);

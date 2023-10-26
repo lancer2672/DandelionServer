@@ -5,6 +5,7 @@ const voximplantService = require("../services/voximplant");
 const {
   BadRequestError,
   UnauthorizedError,
+  NotFoundError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
@@ -80,7 +81,7 @@ exports.login = async (req, res) => {
       emailVerified: true,
     });
     if (!existUser) {
-      throw new BadRequestError("User does not exist");
+      throw new NotFoundError("User does not exist");
     } else {
       bcrypt.compare(password, existUser.password, async (err, compareRes) => {
         if (err) {
@@ -239,7 +240,7 @@ exports.sendEmailVerification = async (req, res) => {
     });
 
     if (!user) {
-      throw new BadRequestError("User does not");
+      throw new NotFoundError("User does not exist");
     }
 
     user.emailVerificationCode = code;
