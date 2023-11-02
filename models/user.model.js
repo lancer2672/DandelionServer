@@ -7,9 +7,6 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
-    password: {
-      type: String,
-    },
     nickname: {
       type: String,
       required: true,
@@ -61,22 +58,6 @@ const UserSchema = new Schema(
     lastOnline: {
       type: Date,
       default: new Date(),
-    },
-    emailVerificationCode: {
-      type: String,
-      default: null,
-    },
-    emailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    emailVerificationCodeExpires: {
-      type: Date,
-      default: null,
-    },
-    voximplantPassword: {
-      type: String,
-      default: null,
     },
   },
   { timestamps: true }
