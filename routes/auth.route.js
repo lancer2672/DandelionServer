@@ -8,11 +8,11 @@ const { body } = require("express-validator");
 
 router.post(
   "/login",
-  body("username").exists().withMessage("username is missing"),
+  body("email").exists().withMessage("email is missing"),
   body("password").exists().withMessage("password is missing"),
   errorHandler(AuthController.login)
 );
-
+router.post("/logout", errorHandler(AuthController.logout));
 router.put(
   "/change-password",
   verifyToken,

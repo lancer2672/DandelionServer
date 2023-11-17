@@ -1,6 +1,6 @@
-const FriendRequest = require("../models/friend-request");
+const FriendRequest = require("../models/friendrequest.model");
 const admin = require("../firebase/firebaseAdmin");
-const Notification = require("../models/notification");
+const Notification = require("../models/notification.model");
 const {
   BadRequestError,
   UnauthorizedError,
@@ -52,50 +52,38 @@ exports.handleSendNotification = async (
   );
 };
 exports.sendNotification = async (req, res) => {
-  try {
-    const { tokenList, message, title } = req.body;
-    handleSendNotification(tokenList, message, title);
-    new OK({
-      message: "Success",
-      data: {},
-    }).send(res);
-  } catch (err) {
-    throw new InternalServerError();
-  }
+  const { tokenList, message, title } = req.body;
+  handleSendNotification(tokenList, message, title);
+  new OK({
+    message: "Success",
+    data: {},
+  }).send(res);
 };
 
 exports.getAllNotifications = async (req, res) => {
-  try {
-    const notifications = await Notification.find({
-      receiverId: req.userId,
-      deletedAt: null,
-    }).sort({
-      createdAt: -1,
-    });
-    new OK({
-      message: "Success",
-      data: { notifications },
-    }).send(res);
-  } catch (err) {
-    throw new InternalServerError();
-  }
+  const notifications = await Notification.find({
+    receiverId: req.userId,
+    deletedAt: null,
+  }).sort({
+    createdAt: -1,
+  });
+  new OK({
+    message: "Success",
+    data: { notifications },
+  }).send(res);
 };
 exports.deleteNotification = async (req, res) => {
-  try {
-    const { notificationId } = req.params;
-    const notification = await Notification.findById(notificationId);
+  const { notificationId } = req.params;
+  const notification = await Notification.findById(notificationId);
 
-    if (!notification) {
-      throw new BadRequestError("Notification not found");
-    }
-
-    notification.deletedAt = new Date();
-    await notification.save();
-    new OK({
-      message: "Success",
-      data: {},
-    }).send(res);
-  } catch (err) {
-    throw new InternalServerError();
+  if (!notification) {
+    throw new BadRequestError("Notification not found");
   }
+
+  notification.deletedAt = new Date();
+  await notification.save();
+  new OK({
+    message: "Success",
+    data: {},
+  }).send(res);
 };

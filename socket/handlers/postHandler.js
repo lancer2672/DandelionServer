@@ -1,5 +1,5 @@
-const User = require("../../models/user");
-const Post = require("../../models/post");
+const User = require("../../models/user.model");
+const Post = require("../../models/post.model");
 const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
 

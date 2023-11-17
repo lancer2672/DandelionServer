@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const FriendRequest = require("../../models/friend-request");
-const Notification = require("../../models/notification");
+const FriendRequest = require("../../models/friendrequest.model");
+const Notification = require("../../models/notification.model");
 const Global = require("../global");
 
 const handleMarkNotificationAsSeen = async function (data) {

@@ -1,6 +1,7 @@
 const User = require("../models/user.model");
-const Credientail = require("../models/credentials.model");
+const Credential = require("../models/credentials.model");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const voximplantService = require("../voximplant");
 const {
@@ -85,8 +86,6 @@ exports.register = async (req, res) => {
           newCredential = new Credential({
             user: newUser._id,
             password: passwordHash,
-            accessToken: "",
-            refreshToken: "",
             refreshTokensUsed: [],
             emailVerificationCode: null,
             emailVerified: false,
@@ -96,6 +95,7 @@ exports.register = async (req, res) => {
 
         await newCredential.save();
       } catch (err) {
+        console.log("err", err);
         throw new InternalServerError();
       }
 
@@ -107,13 +107,14 @@ exports.register = async (req, res) => {
   });
 };
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
+  console.log(email, password);
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw new BadRequestError("Invalid information");
   }
 
-  const existUser = await User.findOne({ username: username.toLowerCase() });
+  const existUser = await User.findOne({ email: email.toLowerCase() });
   if (!existUser) {
     throw new NotFoundError("User does not exist");
   } else {
@@ -137,7 +138,11 @@ exports.login = async (req, res) => {
 
           new OK({
             message: "User logged in successfully",
-            data: { token: accessToken, user: existUser },
+            data: {
+              token: accessToken,
+              refreshToken: refreshToken,
+              user: existUser,
+            },
           }).send(res);
         } else {
           throw new BadRequestError("Incorrect information");
@@ -293,11 +298,11 @@ exports.sendEmailVerification = async (req, res) => {
     credential.emailVerificationCode = code;
     credential.emailVerificationCodeExpires = expires;
     await credential.save();
-
     const result = await sendVerificationEmail(email, code);
 
-    new OK().send(res);
+    new OK({}).send(res);
   } catch (er) {
+    console.log("send email er", er);
     throw new InternalServerError();
   }
 };
@@ -346,6 +351,7 @@ exports.logout = async (req, res) => {
 
   credential.refreshTokensUsed.push(credential.refreshToken);
   credential.refreshToken = null;
+  credential.accessToken = null;
 
   await credential.save();
 

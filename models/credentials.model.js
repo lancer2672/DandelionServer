@@ -14,11 +14,11 @@ const CredentialSchema = new Schema(
     },
     accessToken: {
       type: String,
-      required: true,
+      default: null,
     },
     refreshToken: {
       type: String,
-      required: true,
+      default: null,
     },
     refreshTokensUsed: [{ type: String }],
     emailVerificationCode: {

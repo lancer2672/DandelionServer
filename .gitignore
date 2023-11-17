@@ -1,12 +1,13 @@
 node_modules/
 uploads/
+upload/
 serviceKey.json
 request.http
 .env
 voximplant_credientials.json
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode
-
+postman
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json

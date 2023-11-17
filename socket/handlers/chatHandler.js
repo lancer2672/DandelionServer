@@ -1,8 +1,8 @@
-const ChatChannel = require("../../models/channel");
+const ChatChannel = require("../../models/channel.model");
 const ObjectId = require("mongoose").Types.ObjectId;
-const Channel = require("../../models/channel");
-const User = require("../../models/user");
-const FriendRequestModel = require("../../models/friend-request");
+const Channel = require("../../models/channel.model");
+const User = require("../../models/user.model");
+const FriendRequestModel = require("../../models/friendrequest.model");
 const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
 
@@ -17,7 +17,6 @@ const getChannelMembers = async (userId, channelId) => {
   const receiverId = channel.memberIds.find((memberId) => memberId != userId);
   const receiver = await User.findById(receiverId);
   const sender = await User.findById(userId);
-
   return { receiver, sender };
 };
 const sendNotification = async (

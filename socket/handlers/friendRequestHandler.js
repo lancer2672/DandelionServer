@@ -1,6 +1,6 @@
-const Channel = require("../../models/channel");
-const User = require("../../models/user");
-const FriendRequestModel = require("../../models/friend-request");
+const Channel = require("../../models/channel.model");
+const User = require("../../models/user.model");
+const FriendRequestModel = require("../../models/friendrequest.model");
 const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
 

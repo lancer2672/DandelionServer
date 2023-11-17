@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
-const FriendRequestController = require("../controllers/friend-request.controller");
+const FriendRequestController = require("../controllers/friendrequest.controller");
 const errorHandler = require("../middleware/errorHandler");
 
 const router = express.Router();

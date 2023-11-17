@@ -1,6 +1,6 @@
 const { default: mongoose } = require("mongoose");
-const Channel = require("../models/channel");
-const User = require("../models/user");
+const Channel = require("../models/channel.model");
+const User = require("../models/user.model");
 const { validationResult } = require("express-validator");
 const {
   BadRequestError,
@@ -41,44 +41,40 @@ exports.GetChannelMember = async (req, res) => {
 };
 
 exports.getChannelMessages = async (req, res) => {
-  try {
-    const channelId = req.params.channelId;
-    const channel = await Channel.findById(channelId);
+  const channelId = req.params.channelId;
+  const channel = await Channel.findById(channelId);
 
-    if (!channel) {
-      throw new NotFoundError("Channel not found");
-    }
-
-    const recentMessages = await Channel.aggregate([
-      { $match: { _id: mongoose.Types.ObjectId(channelId) } },
-      //get data from channelMessages property
-      { $unwind: "$channelMessages" },
-      { $sort: { "channelMessages.createdAt": -1 } },
-      // { $limit: 7 },
-      {
-        $group: {
-          _id: "$_id",
-          channelMessages: { $push: "$channelMessages" },
-        },
-      },
-      { $project: { _id: 0, channelMessages: 1 } },
-    ]);
-    new OK({
-      message: "Success",
-      data: {
-        messages:
-          recentMessages.length == 0 ? [] : recentMessages[0].channelMessages,
-      },
-    }).send(res);
-  } catch (err) {
-    throw new InternalServerError();
+  if (!channel) {
+    throw new NotFoundError("Channel not found");
   }
+
+  const recentMessages = await Channel.aggregate([
+    { $match: { _id: mongoose.Types.ObjectId(channelId) } },
+    //get data from channelMessages property
+    { $unwind: "$channelMessages" },
+    { $sort: { "channelMessages.createdAt": -1 } },
+    // { $limit: 7 },
+    {
+      $group: {
+        _id: "$_id",
+        channelMessages: { $push: "$channelMessages" },
+      },
+    },
+    { $project: { _id: 0, channelMessages: 1 } },
+  ]);
+  new OK({
+    message: "Success",
+    data: {
+      messages:
+        recentMessages.length == 0 ? [] : recentMessages[0].channelMessages,
+    },
+  }).send(res);
 };
 
 exports.getLastMessage = async (req, res) => {
   try {
     const channelId = req.params.channelId;
-    const channel = await Channel.findById(channelId);
+    const channel = await Channel.findById(channelId).lean();
     let lastMessage = null;
     if (channel.channelMessages.length > 0) {
       lastMessage = channel.channelMessages[0];

@@ -5,7 +5,9 @@ var imageStorage = multer.diskStorage({
     cb(null, "upload/images");
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now());
+    var extArray = file.mimetype.split("/");
+    var extension = extArray[extArray.length - 1];
+    cb(null, "image -" + Date.now() + "." + extension);
   },
 });
 
@@ -14,7 +16,9 @@ var videoStorage = multer.diskStorage({
     cb(null, "upload/videos");
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now());
+    var extArray = file.mimetype.split("/");
+    var extension = extArray[extArray.length - 1];
+    cb(null, "video -" + Date.now() + "." + extension);
   },
 });
 

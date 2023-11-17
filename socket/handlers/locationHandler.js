@@ -1,5 +1,5 @@
 const Global = require("../global");
-const User = require("../../models/user");
+const User = require("../../models/user.model");
 
 const getFriendsSocket = (friends) => {
   const friendIds = friends.map((friend) => friend.userId);

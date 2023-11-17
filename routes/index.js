@@ -5,7 +5,7 @@ const postRoutes = require("./post.route");
 const userRoutes = require("./user.route");
 const chatRoutes = require("./chat.route");
 const uploadRoutes = require("./upload.route");
-const friendRequestRoutes = require("./friend-request.route");
+const friendRequestRoutes = require("./friendrequest.route");
 const notificationRoutes = require("./notification.route");
 
 routes.use("/api/auth", authRoutes);
