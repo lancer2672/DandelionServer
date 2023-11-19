@@ -26,7 +26,7 @@ app.use(helmet());
 app.use(compression());
 app.use(
   "/upload/images",
-  express.static(path.join(__dirname, "../upload/images"))
+  express.static(path.join(__dirname, "/upload/images"))
 );
 app.use(
   "/upload/videos",

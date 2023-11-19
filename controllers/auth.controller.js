@@ -123,32 +123,25 @@ exports.login = async (req, res) => {
       throw new NotFoundError("User has not been verified");
     }
 
-    bcrypt.compare(
-      password,
-      existCredential.password,
-      async (err, compareRes) => {
-        if (err) {
-          throw new InternalServerError("Error while checking user password");
-        } else if (compareRes) {
-          const accessToken = generateAccessToken(existUser._id);
-          const refreshToken = generateRefreshToken(existUser._id);
-          existCredential.accessToken = accessToken;
-          existCredential.refreshToken = refreshToken;
-          await existCredential.save();
+    const compareRes = await bcrypt.compare(password, existCredential.password);
+    if (compareRes) {
+      const accessToken = generateAccessToken(existUser._id);
+      const refreshToken = generateRefreshToken(existUser._id);
+      existCredential.accessToken = accessToken;
+      existCredential.refreshToken = refreshToken;
+      await existCredential.save();
 
-          new OK({
-            message: "User logged in successfully",
-            data: {
-              token: accessToken,
-              refreshToken: refreshToken,
-              user: existUser,
-            },
-          }).send(res);
-        } else {
-          throw new BadRequestError("Incorrect information");
-        }
-      }
-    );
+      new OK({
+        message: "User logged in successfully",
+        data: {
+          token: accessToken,
+          refreshToken: refreshToken,
+          user: existUser,
+        },
+      }).send(res);
+    } else {
+      throw new BadRequestError("Incorrect information");
+    }
   }
 };
 
@@ -216,6 +209,7 @@ exports.loginWithGoogle = async (req, res) => {
 
 exports.refreshToken = async (req, res) => {
   const user = await User.findById(req.userId);
+  console.log("UserRefreshToken", req.userId, user);
   const credential = await Credential.findOne({ user: user._id });
   const refreshToken = credential.refreshToken;
   if (!refreshToken) {

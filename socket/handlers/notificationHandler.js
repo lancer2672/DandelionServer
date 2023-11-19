@@ -8,7 +8,7 @@ const handleMarkNotificationAsSeen = async function (data) {
     const userId = this.handshake.query.userId;
     const { friendRequestIds, notificationIds } = data;
     const socketIO = Global.socketIO;
-    const userSocketId = Global.onlineUsers[userId];
+    const userSocketId = Global.onlineUsers[userId].socketId;
 
     const friendRequestObjectIds = friendRequestIds.map((id) =>
       mongoose.Types.ObjectId(id)

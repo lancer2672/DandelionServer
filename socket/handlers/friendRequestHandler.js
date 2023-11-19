@@ -63,10 +63,35 @@ const acceptFriendRequest = async (request) => {
     console.log(er);
   }
 };
+
+const handleAcceptFriendRequest = async (request, senderId, receiverId) => {
+  const socketIO = Global.socketIO;
+  const onlineUsers = Global.onlineUsers;
+  const senderSocketId = onlineUsers[senderId].socketId;
+  const receiverSocketId = onlineUsers[receiverId].socketId;
+
+  const newChannel = await acceptFriendRequest(request);
+  console.log("newChannel", newChannel);
+  socketIO.to(senderSocketId).emit("new-notification");
+
+  socketIO.to(senderSocketId).emit("new-channel", newChannel);
+  socketIO.to(receiverSocketId).emit("new-channel", newChannel);
+
+  socketIO.to(senderSocketId).emit("response-friendRequest", {
+    requestId: request._id,
+    responseValue: "accept",
+    userIds: [senderId, receiverId],
+  });
+  socketIO.to(receiverSocketId).emit("response-friendRequest", {
+    requestId: request._id,
+    responseValue: "accept",
+    userIds: [senderId, receiverId],
+  });
+};
 const unFriend = async (socketIO, data) => {
   const { userId, friendId } = data;
-  const userSocketId = Global.onlineUsers[userId];
-  const friendSocketId = Global.onlineUsers[data.friendId];
+  const userSocketId = Global.onlineUsers[userId].socketId;
+  const friendSocketId = Global.onlineUsers[data.friendId].socketId;
 
   console.log({ userId, friendId, userSocketId, friendSocketId });
 
@@ -107,13 +132,15 @@ const unFriend = async (socketIO, data) => {
 const handleFriendRequest = async ({ senderId, receiverId }) => {
   const socketIO = Global.socketIO;
   const onlineUsers = Global.onlineUsers;
+  const senderSocketId = onlineUsers[senderId].socketId;
+  const receiverSocketId = onlineUsers[receiverId].socketId;
   try {
     const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
-    const checkIfFriend = sender.friends.some(
+    const isAlreadyFriend = sender.friends.some(
       (friend) => friend.userId == receiverId
     );
-    if (checkIfFriend) {
+    if (isAlreadyFriend) {
       return;
     }
     const existedRequestAtoB = await findExistedPendingFriendRequest(
@@ -130,32 +157,7 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
     );
     //if existed then accept the request
     if (existedRequestBtoA) {
-      const newChannel = await acceptFriendRequest(existedRequestBtoA);
-      console.log("newChannel", newChannel);
-      socketIO.to(onlineUsers[senderId].socketId).emit("new-notification");
-
-      socketIO
-        .to(onlineUsers[senderId].socketId)
-        .emit("new-channel", newChannel);
-      socketIO
-        .to(onlineUsers[receiverId].socketId)
-        .emit("new-channel", newChannel);
-
-      socketIO
-        .to(onlineUsers[senderId].socketId)
-        .emit("response-friendRequest", {
-          requestId: existedRequestBtoA._id,
-          responseValue: "accept",
-          userIds: [senderId, receiverId],
-        });
-      socketIO
-        .to(onlineUsers[receiverId].socketId)
-        .emit("response-friendRequest", {
-          requestId: existedRequestBtoA._id,
-          responseValue: "accept",
-          userIds: [senderId, receiverId],
-        });
-
+      await handleAcceptFriendRequest(existedRequestBtoA, senderId, receiverId);
       await addFriendToFriendList(senderId, receiverId);
       await addFriendToFriendList(receiverId, senderId);
 
@@ -171,13 +173,10 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
         status: "pending",
       });
       await newRequest.save();
-      console.log("onlineUsers[senderId]", onlineUsers[senderId]);
-      socketIO
-        .to(onlineUsers[senderId])
-        .emit("send-friendRequest", "sentRequest");
-      socketIO.to(onlineUsers[receiverId]).emit("send-friendRequest", "accept");
+      socketIO.to(senderSocketId).emit("send-friendRequest", "sentRequest");
+      socketIO.to(receiverSocketId).emit("send-friendRequest", "accept");
 
-      socketIO.to(onlineUsers[receiverId]).emit("new-notification");
+      socketIO.to(receiverSocketId).emit("new-notification");
       await NotificationController.handleSendNotification(
         [receiver.FCMtoken],
         `${sender.nickname} đã gửi cho bạn lời mời kết bạn`
@@ -191,6 +190,8 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
 const handleResponseRequest = async ({ requestId, responseValue }) => {
   const socketIO = Global.socketIO;
   const onlineUsers = Global.onlineUsers;
+  const senderSocketId = onlineUsers[senderId].socketId;
+  const receiverSocketId = onlineUsers[receiverId].socketId;
   try {
     const request = await FriendRequestModel.findById(requestId);
     const sender = await User.findById(request.sender);
@@ -200,33 +201,13 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
       return;
     }
     if (responseValue === "accept") {
-      const channel = await findOrCreateChannel("New Chat Room", [
-        request.sender,
-        request.receiver,
-      ]);
-      channel.isInWaitingList = false;
-      request.status = "accepted";
-      await channel.save();
-      await request.save();
+      await handleAcceptFriendRequest(
+        existedRequestBtoA,
+        sender.id,
+        receiver.id
+      );
       await addFriendToFriendList(sender._id, receiver._id);
       await addFriendToFriendList(receiver._id, sender._id);
-      // socketIO.to(request.sender).emit("new-channel", channel);
-      // socketIO.to(request.receiver).emit("new-channel", channel);
-
-      socketIO
-        .to(onlineUsers[request.sender._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "accept",
-          userIds: [sender._id, receiver._id],
-        });
-      socketIO
-        .to(onlineUsers[request.receiver._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "accept",
-          userIds: [sender._id, receiver._id],
-        });
       console.log("Friend request accepted");
       await NotificationController.handleSendNotification(
         [sender.FCMtoken],
@@ -235,18 +216,14 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
     } else if (responseValue === "decline") {
       request.status = "declined";
       await request.save();
-      socketIO
-        .to(onlineUsers[request.sender._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "decline",
-        });
-      socketIO
-        .to(onlineUsers[request.receiver._id])
-        .emit("response-friendRequest", {
-          requestId: request._id,
-          responseValue: "decline",
-        });
+      socketIO.to(senderSocketId).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "decline",
+      });
+      socketIO.to(receiverSocketId).emit("response-friendRequest", {
+        requestId: request._id,
+        responseValue: "decline",
+      });
       console.log("Friend request declined");
     } else {
       console.log("Invalid status value");

@@ -6,10 +6,10 @@ const {
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
 exports.handleUploadImage = async (req, res) => {
+  console.log("handle upload image: req.file", req.files);
   if (req.files) {
     const fileUrls = req.files.map((file) => file.path);
     new OK({
-      message: "User logged in successfully",
       data: { fileUrls: fileUrls },
     }).send(res);
   } else {
@@ -19,7 +19,6 @@ exports.handleUploadImage = async (req, res) => {
 exports.handleUploadVideo = async (req, res) => {
   if (req.file) {
     new OK({
-      message: "User logged in successfully",
       data: { fileUrl: req.file.path },
     }).send(res);
   } else {

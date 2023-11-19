@@ -75,7 +75,6 @@ const handleJoinChannels = function (channelIds = []) {
 const handleJoinChannel = function ({ userBId, channelId }) {
   const socketB = Global.socketIO.of("/").sockets.get(socketBId);
   const socketBId = Global.onlineUsers[userBId].socketId;
-  cónt;
   if (socketBId) {
     socketB.join(channelId);
   }
