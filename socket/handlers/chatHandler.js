@@ -37,31 +37,40 @@ const sendNotification = async (
     "Thông báo"
   );
 };
-const createMessage = async function (data, messageType) {
-  const { channelId, userId } = data;
-  let newMess = { userId, isSeen: false, createdAt: new Date() };
-  switch (messageType) {
+const createMessage = async function (data) {
+  const { channelId, userId, type } = data;
+  console.log("createMessage", data);
+  let newMess = {
+    userId,
+    type,
+    isSeen: false,
+    createdAt: new Date(),
+  };
+  let attrs;
+  switch (type) {
     case "text":
-      newMess.message = data.newMessage;
+      attrs = { message: data.newMessage };
       break;
     case "image":
-      newMess.imageUrls = data.imageUrls || [];
+      attrs = { imageUrls: data.imageUrls };
       break;
     case "callHistory":
-      newMess.callHistory = { duration: data.duration };
+      attrs = { callHistory: { duration: data.duration } };
       break;
     case "videoMessage":
-      newMess.videoUrls = data.videoUrls;
+      attrs = { videoUrls: data.videoUrls };
       break;
     default:
       throw new Error("Invalid message type");
   }
+  newMess.attrs = attrs;
   console.log("newmess", newMess);
 
   const chatChannel = await Channel.findById(channelId);
   chatChannel.channelMessages.unshift(newMess);
   chatChannel.lastUpdate = new Date();
   const savedChatChannel = await chatChannel.save();
+
   // Get the last message in the array, which is the one we just added
   const savedMessage = savedChatChannel.channelMessages[0];
 
@@ -69,12 +78,14 @@ const createMessage = async function (data, messageType) {
 };
 
 const handleJoinChannels = function (channelIds = []) {
+  console.log("join channels ", channelIds);
   this.join(channelIds);
 };
 //chat friend (userB) will join to the channel
 const handleJoinChannel = function ({ userBId, channelId }) {
-  const socketB = Global.socketIO.of("/").sockets.get(socketBId);
+  console.log("userBId,ChannelId", userBId, channelId);
   const socketBId = Global.onlineUsers[userBId].socketId;
+  const socketB = Global.socketIO.of("/").sockets.get(socketBId);
   if (socketBId) {
     socketB.join(channelId);
   }
@@ -127,7 +138,7 @@ const handleNewMessageType = function (data) {
 const handleSendMessage = async function (data) {
   try {
     const { channelId, userId } = data;
-    const newMess = await createMessage(data, "text");
+    const newMess = await createMessage(data);
 
     emitMessage(channelId, newMess, "text");
     const { receiver, sender } = await getChannelMembers(userId, channelId);

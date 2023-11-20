@@ -16,6 +16,7 @@ module.exports = (socketIO) => {
     socket.on("login", chatEventHandler.handleLogin);
     //chat
     socket.on("join-channels", chatEventHandler.handleJoinChannels);
+    //used in case Guest and user do not have channel yet -> create one -> join
     socket.on("join-channel", chatEventHandler.handleJoinChannel);
     socket.on("join-chatRoom", chatEventHandler.handleSetSeenMessages);
     socket.on("typing", chatEventHandler.handleUserTyping);

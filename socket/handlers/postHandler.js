@@ -37,7 +37,7 @@ const findCommentById = (comments, id) =>
 const handleUploadComment = async function (data) {
   const socketIO = Global.socketIO;
   const { commentUserId, postCreatorId, postId, content, parentId } = data;
-  const postCreatorSocketId = Global.onlineUsers[postCreatorId].socketId;
+  const postCreatorSocketId = Global.onlineUsers[postCreatorId]?.socketId;
 
   try {
     const post = await Post.findById(postId);
@@ -88,7 +88,7 @@ const handleReactPost = async function (data) {
     const socketIO = Global.socketIO;
     const reactUserId = this.handshake.query.userId;
     const { postCreatorId, postId, addToList } = data;
-    const postCreatorSocketId = Global.onlineUsers[postCreatorId].socketId;
+    const postCreatorSocketId = Global.onlineUsers[postCreatorId]?.socketId;
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId).select("-password");
     const reactUser = await User.findById(reactUserId);
