@@ -1,7 +1,11 @@
 const Channel = require("../../models/channel.model");
 const User = require("../../models/user.model");
 const FriendRequestModel = require("../../models/friendrequest.model");
-const NotificationController = require("../../controllers/notification.controller");
+const {
+  NotificationService,
+  NotificationType,
+} = require("../../services/notification.service");
+
 const Global = require("../global");
 
 const findOrCreateChannel = async (channelName, memberIds) => {
@@ -161,10 +165,14 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       await addFriendToFriendList(receiverId, senderId);
 
       console.log("Friend request from B to A is accepted");
-      await NotificationController.handleSendNotification(
-        [sender.FCMtoken],
-        `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
-      );
+
+      await NotificationService.sendNotification({
+        tokens: [sender.FCMtoken],
+        messageData: {
+          message: `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`,
+        },
+        type: NotificationType.FRIEND_REQUEST,
+      });
     } else {
       const newRequest = new FriendRequestModel({
         sender: senderId,
@@ -176,10 +184,13 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       socketIO.to(receiverSocketId).emit("send-friendRequest", "accept");
 
       socketIO.to(receiverSocketId).emit("new-notification");
-      await NotificationController.handleSendNotification(
-        [receiver.FCMtoken],
-        `${sender.nickname} đã gửi cho bạn lời mời kết bạn`
-      );
+      await NotificationService.sendNotification({
+        tokens: [receiver.FCMtoken],
+        messageData: {
+          message: `${sender.nickname} đã gửi cho bạn lời mời kết bạn`,
+        },
+        type: NotificationType.FRIEND_REQUEST,
+      });
     }
   } catch (er) {
     console.log(er);
@@ -204,10 +215,14 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
       await addFriendToFriendList(sender._id, receiver._id);
       await addFriendToFriendList(receiver._id, sender._id);
       console.log("Friend request accepted");
-      await NotificationController.handleSendNotification(
-        [sender.FCMtoken],
-        `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`
-      );
+
+      await NotificationService.sendNotification({
+        tokens: [sender.FCMtoken],
+        messageData: {
+          message: `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`,
+        },
+        type: NotificationType.FRIEND_REQUEST,
+      });
     } else if (responseValue === "decline") {
       request.status = "declined";
       await request.save();

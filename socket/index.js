@@ -20,7 +20,7 @@ module.exports = (socketIO) => {
     socket.on("join-channel", chatEventHandler.handleJoinChannel);
     socket.on("join-chatRoom", chatEventHandler.handleSetSeenMessages);
     socket.on("typing", chatEventHandler.handleUserTyping);
-    socket.on("send-message", chatEventHandler.handleNewMessageType);
+    socket.on("send-message", chatEventHandler.handleIncomingMessage);
 
     //friend
     socket.on("send-friendRequest", friendRequestHandler.handleFriendRequest);
@@ -30,7 +30,7 @@ module.exports = (socketIO) => {
     );
     socket.on("unfriend", friendRequestHandler.unFriend);
     //post
-    socket.on("upload-comment", postEventHandler.handleUploadComment);
+    socket.on("comment-post", postEventHandler.handleUploadComment);
     socket.on("react-post", postEventHandler.handleReactPost);
 
     //notification

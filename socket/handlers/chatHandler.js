@@ -1,13 +1,11 @@
 const ChatChannel = require("../../models/channel.model");
-const ObjectId = require("mongoose").Types.ObjectId;
 const Channel = require("../../models/channel.model");
 const User = require("../../models/user.model");
-const FriendRequestModel = require("../../models/friendrequest.model");
-const NotificationController = require("../../controllers/notification.controller");
 const Global = require("../global");
-
-const fs = require("fs");
-const { title } = require("process");
+const {
+  NotificationService,
+  NotificationType,
+} = require("../../services/notification.service");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
@@ -23,9 +21,10 @@ const getChannelMembers = async (userId, channelId) => {
 const sendNotification = async ({ receiver, sender, channelId, message }) => {
   const channel = await Channel.findById(channelId);
   console.log("SENDER", receiver.FCMtoken);
-  await NotificationController.handleSendNotification({
+
+  const notificationData = {
     tokens: [receiver.FCMtoken],
-    type: "chat/send-message",
+    type: NotificationType.CHAT,
     messageData: {
       message,
       channelId,
@@ -33,8 +32,8 @@ const sendNotification = async ({ receiver, sender, channelId, message }) => {
       avatar: sender.avatar || "",
       nickname: sender.nickname,
     },
-    title: "Thông báo",
-  });
+  };
+  await NotificationService.sendNotification(notificationData);
 };
 const createMessage = async function (data) {
   const { channelId, userId, type } = data;

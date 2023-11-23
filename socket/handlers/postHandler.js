@@ -1,27 +1,40 @@
 const User = require("../../models/user.model");
 const Post = require("../../models/post.model");
-const NotificationController = require("../../controllers/notification.controller");
+const Notification = require("../../models/notification.model");
 const Global = require("../global");
+const {
+  NotificationService,
+  NotificationType,
+} = require("../../services/notification.service");
 
-const sendNotification = async (
+const sendNotification = async ({
   postCreator,
-  commentUser,
+  reactor,
   postId,
-  notificationType,
-  notificationMessage
-) => {
-  await NotificationController.handleSendNotification(
-    [postCreator.FCMtoken],
-    `${commentUser.nickname} ${notificationMessage}`,
-    {
-      type: notificationType,
+  notificationMessage,
+}) => {
+  const notification = new Notification({
+    description: `${reactor.nickname} ${notificationMessage}`,
+    senderIds: [
+      {
+        userId: reactor._id,
+        createdAt: Date.now(),
+      },
+    ],
+    receiverId: postCreator._id,
+    postId,
+  });
+  await notification.save();
+
+  await NotificationService.sendNotification({
+    tokens: [postCreator.FCMtoken],
+    messageData: {
+      message: `${notificationMessage}`,
+      nickname: `${reactor.nickname} `,
       postId,
-      postCreator: JSON.stringify(postCreator),
     },
-    commentUser._id,
-    postCreator._id,
-    postId
-  );
+    type: NotificationType.POST,
+  });
 };
 
 const createNewComment = (content, userId) => ({
@@ -38,12 +51,11 @@ const handleUploadComment = async function (data) {
   const socketIO = Global.socketIO;
   const { commentUserId, postCreatorId, postId, content, parentId } = data;
   const postCreatorSocketId = Global.onlineUsers[postCreatorId]?.socketId;
-
+  console.log("comment data", data);
   try {
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId);
     const commentUser = await User.findById(commentUserId);
-
     let newComment = createNewComment(content, commentUserId);
 
     if (parentId) {
@@ -71,13 +83,12 @@ const handleUploadComment = async function (data) {
 
     if (postCreatorId != commentUserId) {
       socketIO.to(postCreatorSocketId).emit("new-notification");
-      await sendNotification(
+      await sendNotification({
         postCreator,
-        commentUser,
+        reactor: commentUser,
         postId,
-        "post/comment",
-        "đã bình luận về bài viết của bạn"
-      );
+        notificationMessage: "commented on your post",
+      });
     }
   } catch (er) {
     console.log("er", er);
@@ -119,13 +130,12 @@ const handleReactPost = async function (data) {
 
     if (postCreatorId != reactUserId && isAddedToList) {
       socketIO.to(postCreatorSocketId).emit("new-notification");
-      await sendNotification(
+      await sendNotification({
         postCreator,
-        reactUser,
+        reactor: reactUser,
         postId,
-        "post/comment",
-        "đã thích bài viết của bạn"
-      );
+        notificationMessage: "reacted your post",
+      });
     }
   } catch (er) {
     console.log("er", er);

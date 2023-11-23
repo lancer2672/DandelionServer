@@ -51,7 +51,6 @@ const handleStartTracking = async function (data) {
     this.emit("start-tracking", friendsLocation);
   } catch (er) {
     console.log(er);
-    t;
   }
 };
 
