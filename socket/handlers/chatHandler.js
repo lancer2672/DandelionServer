@@ -7,6 +7,7 @@ const NotificationController = require("../../controllers/notification.controlle
 const Global = require("../global");
 
 const fs = require("fs");
+const { title } = require("process");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
@@ -19,23 +20,21 @@ const getChannelMembers = async (userId, channelId) => {
   const sender = await User.findById(userId);
   return { receiver, sender };
 };
-const sendNotification = async (
-  receiver,
-  sender,
-  channelId,
-  notificationTitle
-) => {
+const sendNotification = async ({ receiver, sender, channelId, message }) => {
   const channel = await Channel.findById(channelId);
-  await NotificationController.handleSendNotification(
-    [receiver.FCMtoken],
-    `${sender.nickname} ${notificationTitle}`,
-    {
-      type: "chat",
+  console.log("SENDER", receiver.FCMtoken);
+  await NotificationController.handleSendNotification({
+    tokens: [receiver.FCMtoken],
+    type: "chat/send-message",
+    messageData: {
+      message,
       channelId,
       memberIds: JSON.stringify(channel.memberIds),
+      avatar: sender.avatar || "",
+      nickname: sender.nickname,
     },
-    "Thông báo"
-  );
+    title: "Thông báo",
+  });
 };
 const createMessage = async function (data) {
   const { channelId, userId, type } = data;
@@ -114,7 +113,7 @@ const handleSetSeenMessages = async function ({ channelId }) {
   }
 };
 
-const handleNewMessageType = function (data) {
+const handleIncomingMessage = function (data) {
   const userId = this.handshake.query.userId;
   console.log("data", data);
   switch (data.type) {
@@ -142,12 +141,12 @@ const handleSendMessage = async function (data) {
 
     emitMessage(channelId, newMess, "text");
     const { receiver, sender } = await getChannelMembers(userId, channelId);
-    await sendNotification(
+    await sendNotification({
       receiver,
       sender,
       channelId,
-      "đã gửi cho bạn tin nhắn"
-    );
+      message: newMess.attrs.message,
+    });
   } catch (e) {
     console.log("Error when sending message", e);
   }
@@ -158,12 +157,12 @@ const handleSendImage = async function (data) {
     const newMess = await createMessage(data, "image");
     emitMessage(channelId, newMess, "image");
     const { receiver, sender } = await getChannelMembers(userId, channelId);
-    await sendNotification(
+    await sendNotification({
       receiver,
       sender,
       channelId,
-      "đã gửi cho bạn một ảnh"
-    );
+      message: `${sender.nickname} đã gửi cho bạn một ảnh`,
+    });
   } catch (error) {
     console.log("Error when handling image", error);
   }
@@ -177,12 +176,12 @@ const handleSaveCallhistory = async function (data) {
 
     emitMessage(channelId, newMess, "callHistory");
     if (duration == 0) {
-      await sendNotification(
+      await sendNotification({
         receiver,
         sender,
         channelId,
-        "đã bỏ lỡ cuộc gọi từ"
-      );
+        message: `đã bỏ lỡ cuộc gọi từ ${sender.nickname}`,
+      });
     }
   } catch (error) {
     console.log("Error when saving call history", error);
@@ -195,7 +194,12 @@ const handleSendVideoMessage = async function (data) {
     emitMessage(channelId, newMess, "videoMessage");
     const { receiver, sender } = await getChannelMembers(userId, channelId);
 
-    await sendNotification(receiver, sender, channelId, "đã gửi cho bạn video");
+    await sendNotification({
+      receiver,
+      sender,
+      channelId,
+      message: `${sender.nickname} đã gửi cho bạn video`,
+    });
   } catch (error) {
     console.log("Error when handling video", error);
   }
@@ -236,7 +240,7 @@ module.exports = {
   handleJoinChannels,
   handleJoinChannel,
 
-  handleNewMessageType,
+  handleIncomingMessage,
 
   handleLogin,
   handleSetSeenMessages,
