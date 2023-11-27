@@ -27,9 +27,9 @@ const sendNotification = async ({ receiver, sender, channelId, message }) => {
     type: NotificationType.CHAT,
     messageData: {
       message,
-      channelId,
+      notificationId: channelId,
       memberIds: JSON.stringify(channel.memberIds),
-      avatar: sender.avatar || "",
+      avatar: sender.avatar.url || "",
       nickname: sender.nickname,
     },
   };
@@ -50,13 +50,13 @@ const createMessage = async function (data) {
       attrs = { message: data.newMessage };
       break;
     case "image":
-      attrs = { imageUrls: data.imageUrls };
+      attrs = { images: data.images };
       break;
     case "callHistory":
       attrs = { callHistory: { duration: data.duration } };
       break;
     case "videoMessage":
-      attrs = { videoUrls: data.videoUrls };
+      attrs = { videos: data.videos };
       break;
     default:
       throw new Error("Invalid message type");

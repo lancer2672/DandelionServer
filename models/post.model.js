@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-
+const { ImageSchema } = require("./media.model");
 //Tao model
 const CommentSchema = new Schema({
   userId: {
@@ -19,10 +19,6 @@ const CommentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "user",
       },
-      // repliedUserId: {
-      //   type: Schema.Types.ObjectId,
-      //   ref: "user",
-      // },
       createdAt: {
         type: Date,
         default: Date.now,
@@ -36,10 +32,8 @@ const PostSchema = new Schema(
       type: String,
       default: null,
     },
-    image: {
-      type: String,
-      default: null,
-    },
+    image: ImageSchema,
+
     user: {
       type: Schema.Types.ObjectId,
       ref: "user",

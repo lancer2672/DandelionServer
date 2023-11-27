@@ -18,5 +18,9 @@ router.post(
   uploadVideo.single("video"),
   errorHandler(UploadController.handleUploadVideo)
 );
-
+router.post(
+  "/get-url",
+  verifyToken,
+  errorHandler(UploadController.handleGetFileUrl)
+);
 module.exports = router;

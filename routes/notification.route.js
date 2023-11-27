@@ -5,12 +5,6 @@ const errorHandler = require("../middleware/errorHandler");
 
 const router = express.Router();
 
-router.post(
-  "/send-notification",
-  verifyToken,
-  errorHandler(NotificationController.sendNotification)
-);
-
 router.get(
   "/",
   verifyToken,

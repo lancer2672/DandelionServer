@@ -87,13 +87,13 @@ exports.handleCommentPost = async (req, res) => {
 };
 
 exports.handleUpdatePost = async (req, res) => {
-  const { description, imageUrl } = req.body;
+  const { description, image } = req.body;
   let updatedPost = {};
   if (description) {
     updatedPost.description = description;
   }
-  if (imageUrl) {
-    updatedPost.image = imageUrl;
+  if (image) {
+    updatedPost.image = image;
   }
   updatedPost = await Post.findOneAndUpdate(
     { _id: req.params.id },
@@ -124,15 +124,15 @@ exports.handleCreatePost = async (req, res) => {
   if (!errors.isEmpty()) {
     throw new BadRequestError("Invalid information");
   }
-  const { description, imageUrl } = req.body;
-  console.log("imageUrl", imageUrl);
+  const { description, image } = req.body;
+  console.log("imageUrl", image);
 
   const newPost = new Post({
     description: description || " ",
     user: req.userId,
     comments: [],
     likes: [],
-    image: imageUrl,
+    image,
   });
   const savedPost = await newPost.save();
   console.log("savedPost", savedPost);

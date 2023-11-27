@@ -66,7 +66,7 @@ exports.register = async (req, res) => {
         newUser = new User({
           username: email.toLowerCase(),
           email: email.toLowerCase(),
-          avatar: null,
+          avatar: {},
           lastname,
           firstname,
           dateOfBirth,
@@ -208,10 +208,8 @@ exports.loginWithGoogle = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-  const user = await User.findById(req.userId);
-  console.log("UserRefreshToken", req.userId, user);
-  const credential = await Credential.findOne({ user: user._id });
-  const refreshToken = credential.refreshToken;
+  const refreshToken = req.body.refreshToken;
+  const credential = await Credential.findOne({ refreshToken });
   if (!refreshToken) {
     throw new UnauthorizedError();
   }
@@ -232,6 +230,7 @@ exports.refreshToken = async (req, res) => {
       const userId = decoded.userId;
       const newAccessToken = generateAccessToken(userId);
       credential.accessToken = newAccessToken;
+
       await credential.save();
 
       res.status(200).json({ message: "success", accessToken: newAccessToken });

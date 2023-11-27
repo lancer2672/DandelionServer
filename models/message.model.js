@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const { ImageSchema, VideoSchema } = require("./media.model");
 
 const MessageSchema = new Schema(
   {
@@ -35,20 +36,10 @@ const TextMessageSchema = new Schema({
 });
 
 const ImageMessageSchema = new Schema({
-  imageUrls: [
-    {
-      type: String,
-      require: true,
-    },
-  ],
+  images: [ImageSchema],
 });
 const VideoMessageSchema = new Schema({
-  videoUrls: [
-    {
-      type: String,
-      require: true,
-    },
-  ],
+  videos: [VideoSchema],
 });
 const CallMessageSchema = new Schema({
   callHistory: {

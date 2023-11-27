@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const { ImageSchema, VideoSchema } = require("./media.model");
 
 const UserSchema = new Schema(
   {
@@ -35,9 +36,7 @@ const UserSchema = new Schema(
     phoneNumber: {
       type: String,
     },
-    avatar: {
-      type: String,
-    },
+    avatar: ImageSchema,
     FCMtoken: {
       type: String,
     },

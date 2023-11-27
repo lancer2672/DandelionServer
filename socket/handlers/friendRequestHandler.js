@@ -169,7 +169,7 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       await NotificationService.sendNotification({
         tokens: [sender.FCMtoken],
         messageData: {
-          message: `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`,
+          message: `${receiver.nickname} accepeted your friend request`,
         },
         type: NotificationType.FRIEND_REQUEST,
       });
@@ -187,10 +187,14 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       await NotificationService.sendNotification({
         tokens: [receiver.FCMtoken],
         messageData: {
-          message: `${sender.nickname} đã gửi cho bạn lời mời kết bạn`,
+          notificationId: newRequest._id,
+          nickname: `${sender.nickname}`,
+          avatar: sender.avatar.url,
+          message: `${sender.nickname} sent you a friend request`,
         },
         type: NotificationType.FRIEND_REQUEST,
       });
+      console.log("Created friend request");
     }
   } catch (er) {
     console.log(er);
@@ -216,13 +220,13 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
       await addFriendToFriendList(receiver._id, sender._id);
       console.log("Friend request accepted");
 
-      await NotificationService.sendNotification({
-        tokens: [sender.FCMtoken],
-        messageData: {
-          message: `${receiver.nickname} đã chấp nhận lời mời kết bạn của bạn`,
-        },
-        type: NotificationType.FRIEND_REQUEST,
-      });
+      // await NotificationService.sendNotification({
+      //   tokens: [sender.FCMtoken],
+      //   messageData: {
+      //     message: `${receiver.nickname} accepeted your friend request`,
+      //   },
+      //   type: NotificationType.FRIEND_REQUEST,
+      // });
     } else if (responseValue === "decline") {
       request.status = "declined";
       await request.save();

@@ -17,7 +17,7 @@ const NotificationSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    userIds: [
+    senderIds: [
       {
         userId: {
           type: Schema.Types.ObjectId,

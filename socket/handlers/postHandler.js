@@ -31,7 +31,7 @@ const sendNotification = async ({
     messageData: {
       message: `${notificationMessage}`,
       nickname: `${reactor.nickname} `,
-      postId,
+      notificationId: postId,
     },
     type: NotificationType.POST,
   });
