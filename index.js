@@ -8,17 +8,22 @@ const path = require("path");
 const helmet = require("helmet");
 const compression = require("compression");
 
-const setUpSocket = require("./socket/index");
-const Global = require("./socket/global");
-const mongoDBInstance = require("./db");
-const mainRoute = require("./routes");
-
 const app = express();
 const server = http.Server(app);
+//socket
+const setUpSocket = require("./socket/index");
+const Global = require("./socket/global");
 const socketIOServer = socketIO(server);
-
 setUpSocket(socketIOServer);
 Global.socketIO = socketIOServer;
+
+//swagger
+const setupSwagger = require("./config/swagger");
+setupSwagger(app);
+//dbInstance
+const dbInstance = require("./db");
+
+const mainRoute = require("./routes");
 
 app.use(express.json());
 app.use(cors());

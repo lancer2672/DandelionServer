@@ -1,46 +1,135 @@
 const express = require("express");
-const router = express.Router();
-const AuthController = require("../controllers/auth.controller");
 const verifyToken = require("../middleware/verifyToken");
+const AuthController = require("../controllers/auth.controller");
 const errorHandler = require("../middleware/errorHandler");
 
-const { body } = require("express-validator");
+const router = express.Router();
 
-router.post(
-  "/login",
-  body("email").exists().withMessage("email is missing"),
-  body("password").exists().withMessage("password is missing"),
-  errorHandler(AuthController.login)
-);
-router.post("/logout", errorHandler(AuthController.logout));
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ */
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Login successful
+ */
+router.post("/login", verifyToken, errorHandler(AuthController.login));
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ */
+router.post("/logout", verifyToken, errorHandler(AuthController.logout));
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   put:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ */
 router.put(
   "/change-password",
   verifyToken,
-  body("currentPassword").exists().withMessage("currentPassword is missing"),
-  body("newPassword").exists().withMessage("newPassword is missing"),
   errorHandler(AuthController.changePassword)
 );
 
-router.post("/google", AuthController.loginWithGoogle);
-
+/**
+ * @swagger
+ * /auth/google:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Login with Google successful
+ */
 router.post(
-  "/register",
-  body("password").exists().withMessage("password is missing"),
-  body("email").exists().withMessage("email is missing"),
-  errorHandler(AuthController.register)
+  "/google",
+  verifyToken,
+  errorHandler(AuthController.loginWithGoogle)
 );
 
-router.post("/refresh-token", errorHandler(AuthController.refreshToken));
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Registration successful
+ */
+router.post("/register", verifyToken, errorHandler(AuthController.register));
 
+/**
+ * @swagger
+ * /auth/refresh-token:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ */
+router.post(
+  "/refresh-token",
+  verifyToken,
+  errorHandler(AuthController.refreshToken)
+);
+
+/**
+ * @swagger
+ * /auth/send-email-verification:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Email verification sent successfully
+ */
 router.post(
   "/send-email-verification",
+  verifyToken,
   errorHandler(AuthController.sendEmailVerification)
 );
-router.get("/verify-email", errorHandler(AuthController.verifyEmail));
+
+/**
+ * @swagger
+ * /auth/verify-email:
+ *   get:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ */
+router.get(
+  "/verify-email",
+  verifyToken,
+  errorHandler(AuthController.verifyEmail)
+);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   put:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ */
 router.put(
   "/reset-password",
-  body("newPassword").exists().withMessage("newPassword is missing"),
-  body("currentPassword").exists().withMessage("currentPassword is missing"),
+  verifyToken,
   errorHandler(AuthController.resetPassword)
 );
 

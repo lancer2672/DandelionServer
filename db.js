@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const { countConnect } = require("./helpers/checkConnect");
-const config = require("./config");
+const config = require("./config/appConfig");
 
 const connectionString = `mongodb+srv://${config.db.user_name}:${config.db.password}@dandelion.bswdcrh.mongodb.net/?retryWrites=true&w=majority`;
 class Database {

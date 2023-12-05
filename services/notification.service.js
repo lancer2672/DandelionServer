@@ -27,32 +27,6 @@ class NotificationService {
     console.log("Data", data);
     await this.sendMulticastMessage(tokens, data);
   }
-
-  // static async sendPostNotification(params) {
-  //   const {
-  //     receiverId,
-  //     senderId,
-  //     tokens,
-  //     type,
-  //     messageData,
-  //   } = params
-
-  //   const notification = new Notification({
-  //     description: messageData.message,
-  //     userIds: [
-  //       {
-  //         userId: senderId,
-  //         createdAt: Date.now(),
-  //       },
-  //     ],
-  //     receiverId: receiverId,
-  //     postId: postId,
-  //   });
-  //   await notification.save();
-  //   const data = this.createMessageData(type, messageData);
-  //   console.log("Data", data);
-  //   await this.sendMulticastMessage(tokens, data);
-  // }
 }
 
 module.exports = { NotificationService, NotificationType };
