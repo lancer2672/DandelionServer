@@ -1,6 +1,7 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-
+const fs = require("fs");
+const yaml = require("js-yaml");
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -13,6 +14,9 @@ const options = {
 };
 
 const specs = swaggerJsdoc(options);
+
+const yamlSpecs = yaml.dump(specs);
+fs.writeFileSync("./swagger.yaml", yamlSpecs, "utf8");
 
 module.exports = (app) => {
   app.use(

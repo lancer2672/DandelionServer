@@ -1,0 +1,845 @@
+openapi: 3.0.0
+info:
+  title: Express API with Swagger
+  version: 1.0.0
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Login successful
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Logout successful
+  /auth/change-password:
+    put:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Password changed successfully
+  /auth/google:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Login with Google successful
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Registration successful
+  /auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Token refreshed successfully
+  /auth/send-email-verification:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Email verification sent successfully
+  /auth/verify-email:
+    get:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Email verified successfully
+  /auth/reset-password:
+    put:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Password reset successful
+  /chat/channels:
+    get:
+      tags:
+        - Chat
+      summary: Get chat channels
+      description: Get chat channels
+      responses:
+        '200':
+          description: Chat channels retrieved successfully
+  /chat/member/{channelId}:
+    get:
+      tags:
+        - Chat
+      summary: Get channel members by channel ID
+      description: Get channel members by channel ID
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          description: ID of the chat channel
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Channel members retrieved successfully
+  /chat/last-message/{channelId}:
+    get:
+      tags:
+        - Chat
+      summary: Get last message in a channel by channel ID
+      description: Get last message in a channel by channel ID
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          description: ID of the chat channel
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Last message retrieved successfully
+  /chat/messages/{channelId}:
+    get:
+      tags:
+        - Chat
+      summary: Get messages in a channel by channel ID
+      description: Get messages in a channel by channel ID
+      parameters:
+        - in: path
+          name: channelId
+          required: true
+          description: ID of the chat channel
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages retrieved successfully
+  /chat/channel/find:
+    post:
+      tags:
+        - Chat
+      summary: Find or create a chat channel
+      description: Find or create a chat channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                memberIds:
+                  type: array
+                  items:
+                    type: string
+              example:
+                memberIds:
+                  - userId1
+                  - userId2
+      responses:
+        '200':
+          description: Channel found or created successfully
+  /friend-requests/requests:
+    get:
+      tags:
+        - FriendRequests
+      summary: Get friend requests
+      description: Get friend requests
+      responses:
+        '200':
+          description: Friend requests retrieved successfully
+  /friend-requests/check-status/{receiverId}:
+    get:
+      tags:
+        - FriendRequests
+      summary: Check friend request status by receiver ID
+      description: Check friend request status by receiver ID
+      parameters:
+        - in: path
+          name: receiverId
+          required: true
+          description: ID of the friend request receiver
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend request status checked successfully
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get all notifications
+      description: Get all notifications
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+  /notifications/{notificationId}:
+    delete:
+      tags:
+        - Notifications
+      summary: Delete a notification by ID
+      description: Delete a notification by ID
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          description: ID of the notification to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted successfully
+  /post/all:
+    get:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: All posts retrieved successfully
+  /post/:userId:
+    get:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post by user ID retrieved successfully
+  /post/:
+    get:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post by ID retrieved successfully
+  /post/comment/:id:
+    delete:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Comment deleted successfully
+    put:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Comment posted successfully
+  /post/react/:id:
+    put:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post reacted successfully
+  /post/:id:
+    put:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post updated successfully
+    delete:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post deleted successfully
+  /post/create:
+    post:
+      tags:
+        - Post
+      responses:
+        '200':
+          description: Post created successfully
+  /upload/image:
+    post:
+      tags:
+        - Upload
+      responses:
+        '200':
+          description: Image uploaded successfully
+  /upload/video:
+    post:
+      tags:
+        - Upload
+      responses:
+        '200':
+          description: Video uploaded successfully
+  /upload/get-url:
+    post:
+      tags:
+        - Upload
+      responses:
+        '200':
+          description: File URL retrieved successfully
+  /user/friend/get-all:
+    get:
+      tags:
+        - User
+      responses:
+        '200':
+          description: Friends retrieved successfully
+  /user/search-history/recent:
+    get:
+      tags:
+        - User
+      responses:
+        '200':
+          description: Search history retrieved successfully
+  /user/search:
+    get:
+      tags:
+        - User
+      responses:
+        '200':
+          description: Search completed successfully
+  /user/{id}:
+    get:
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Numeric ID of the user to get
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User retrieved successfully
+  /user/save-token:
+    put:
+      tags:
+        - User
+      responses:
+        '200':
+          description: User token saved successfully
+  /user/update:
+    put:
+      tags:
+        - User
+      responses:
+        '200':
+          description: User updated successfully
+  /user/search-history/add:
+    post:
+      tags:
+        - User
+      responses:
+        '200':
+          description: User added to search history successfully
+  /user/search-history/remove/{userId}:
+    delete:
+      tags:
+        - User
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          description: Numeric ID of the user to remove from search history
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User removed from search history successfully
+components:
+  schemas:
+    Channel:
+      type: object
+      required:
+        - channelName
+        - memberIds
+        - lastUpdate
+        - isInWaitingList
+        - channelMessages
+      properties:
+        channelName:
+          type: string
+          description: The name of the channel.
+        memberIds:
+          type: array
+          items:
+            type: string
+          description: The IDs of the members in the channel.
+        lastUpdate:
+          type: string
+          format: date-time
+          description: The last update time of the channel.
+        isInWaitingList:
+          type: boolean
+          description: If user A and B are not friends, this is true.
+        channelMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          description: The messages in the channel.
+      example:
+        channelName: Channel 1
+        memberIds:
+          - 60d0fe4f7439346e18c6343a
+        lastUpdate: '2023-12-05T08:39:32.000Z'
+        isInWaitingList: false
+        channelMessages: []
+    Credential:
+      type: object
+      required:
+        - user
+        - password
+        - accessToken
+        - refreshToken
+        - refreshTokensUsed
+        - emailVerificationCode
+        - emailVerified
+        - emailVerificationCodeExpires
+      properties:
+        user:
+          type: string
+          description: The ID of the user.
+        password:
+          type: string
+          description: The password of the user.
+        accessToken:
+          type: string
+          description: The access token of the user.
+        refreshToken:
+          type: string
+          description: The refresh token of the user.
+        refreshTokensUsed:
+          type: array
+          items:
+            type: string
+          description: The refresh tokens used by the user.
+        emailVerificationCode:
+          type: string
+          description: The email verification code of the user.
+        emailVerified:
+          type: boolean
+          description: The email verification status of the user.
+        emailVerificationCodeExpires:
+          type: string
+          format: date-time
+          description: The expiration time of the email verification code.
+      example:
+        user: 60d0fe4f7439346e18c6343a
+        password: hashedpassword
+        accessToken: access-token
+        refreshToken: refresh-token
+        refreshTokensUsed:
+          - refresh-token-used
+        emailVerificationCode: verification-code
+        emailVerified: false
+        emailVerificationCodeExpires: '2023-12-05T08:39:32.000Z'
+    FriendRequest:
+      type: object
+      required:
+        - sender
+        - receiver
+        - status
+        - isSeen
+      properties:
+        sender:
+          type: string
+          description: The ID of the user who sent the friend request.
+        receiver:
+          type: string
+          description: The ID of the user who received the friend request.
+        status:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - declined
+          description: The status of the friend request.
+        isSeen:
+          type: boolean
+          description: Whether the friend request has been seen by the receiver.
+      example:
+        sender: 60d0fe4f7439346e18c6343a
+        receiver: 60d0fe4f7439346e18c6343b
+        status: pending
+        isSeen: false
+    Image:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the image.
+        url:
+          type: string
+          description: The URL of the image.
+      example:
+        name: Image 1
+        url: https://example.com/image1.jpg
+    Video:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the video.
+        url:
+          type: string
+          description: The URL of the video.
+        duration:
+          type: number
+          description: The duration of the video in seconds.
+      example:
+        name: Video 1
+        url: https://example.com/video1.mp4
+        duration: 120
+    Message:
+      type: object
+      required:
+        - userId
+        - type
+        - isSeen
+        - createdAt
+        - attrs
+      properties:
+        userId:
+          type: string
+          description: The ID of the user who sent the message.
+        type:
+          type: string
+          enum:
+            - text
+            - image
+            - video
+            - callHistory
+          description: The type of the message.
+        isSeen:
+          type: boolean
+          description: Whether the message has been seen by the receiver.
+        createdAt:
+          type: string
+          format: date-time
+          description: The creation time of the message.
+        attrs:
+          type: object
+          description: The attributes of the message, depending on its type.
+      example:
+        userId: 60d0fe4f7439346e18c6343a
+        type: text
+        isSeen: false
+        createdAt: '2023-12-05T08:39:32.000Z'
+        attrs:
+          message: Hello, world!
+    TextMessage:
+      allOf:
+        - $ref: '#/components/schemas/Message'
+        - type: object
+          properties:
+            attrs:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: The text of the message.
+    ImageMessage:
+      allOf:
+        - $ref: '#/components/schemas/Message'
+        - type: object
+          properties:
+            attrs:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Image'
+    VideoMessage:
+      allOf:
+        - $ref: '#/components/schemas/Message'
+        - type: object
+          properties:
+            attrs:
+              type: object
+              properties:
+                videos:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Video'
+    CallMessage:
+      allOf:
+        - $ref: '#/components/schemas/Message'
+        - type: object
+          properties:
+            attrs:
+              type: object
+              properties:
+                callHistory:
+                  type: object
+                  properties:
+                    duration:
+                      type: number
+                      description: The duration of the call in seconds.
+    Notification:
+      type: object
+      required:
+        - description
+        - title
+        - isSeen
+        - senderIds
+        - receiverId
+        - postId
+        - deletedAt
+      properties:
+        description:
+          type: string
+          description: The description of the notification.
+        title:
+          type: string
+          description: The title of the notification.
+        isSeen:
+          type: boolean
+          description: Whether the notification has been seen by the receiver.
+        senderIds:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: The ID of the user who sent the notification.
+              createdAt:
+                type: string
+                format: date-time
+                description: The creation time of the notification.
+        receiverId:
+          type: string
+          description: The ID of the user who received the notification.
+        postId:
+          type: string
+          description: The ID of the post related to the notification.
+        deletedAt:
+          type: string
+          format: date-time
+          description: The deletion time of the notification.
+      example:
+        description: User A commented on your post.
+        title: New Comment
+        isSeen: false
+        senderIds:
+          - userId: 60d0fe4f7439346e18c6343a
+            createdAt: '2023-12-05T08:39:32.000Z'
+        receiverId: 60d0fe4f7439346e18c6343b
+        postId: 60d0fe4f7439346e18c6343c
+        deletedAt: null
+    Comment:
+      type: object
+      required:
+        - userId
+        - content
+        - createdAt
+        - replies
+      properties:
+        userId:
+          type: string
+          description: The ID of the user who made the comment.
+        content:
+          type: string
+          description: The content of the comment.
+        createdAt:
+          type: string
+          format: date-time
+          description: The creation time of the comment.
+        replies:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                type: string
+                description: The content of the reply.
+              userId:
+                type: string
+                description: The ID of the user who made the reply.
+              createdAt:
+                type: string
+                format: date-time
+                description: The creation time of the reply.
+      example:
+        userId: 60d0fe4f7439346e18c6343a
+        content: This is a comment.
+        createdAt: '2023-12-05T08:39:32.000Z'
+        replies:
+          - content: This is a reply.
+            userId: 60d0fe4f7439346e18c6343b
+            createdAt: '2023-12-05T08:39:32.000Z'
+    Post:
+      type: object
+      required:
+        - description
+        - image
+        - user
+        - likes
+        - comments
+      properties:
+        description:
+          type: string
+          description: The description of the post.
+        image:
+          $ref: '#/components/schemas/Image'
+        user:
+          type: string
+          description: The ID of the user who made the post.
+        likes:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: The ID of the user who liked the post.
+              createdAt:
+                type: string
+                format: date-time
+                description: The time when the user liked the post.
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+      example:
+        description: This is a post.
+        image:
+          name: Image 1
+          url: https://example.com/image1.jpg
+        user: 60d0fe4f7439346e18c6343a
+        likes:
+          - userId: 60d0fe4f7439346e18c6343b
+            createdAt: '2023-12-05T08:39:32.000Z'
+        comments:
+          - userId: 60d0fe4f7439346e18c6343b
+            content: This is a comment.
+            createdAt: '2023-12-05T08:39:32.000Z'
+            replies: []
+    SearchHistory:
+      type: object
+      required:
+        - user
+        - searchedUsers
+      properties:
+        user:
+          type: string
+          description: The ID of the user who made the search.
+        searchedUsers:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: The ID of the user who was searched.
+              searchTime:
+                type: string
+                format: date-time
+                description: The time when the user was searched.
+              deletedAt:
+                type: string
+                format: date-time
+                description: The deletion time of the search history.
+      example:
+        user: 60d0fe4f7439346e18c6343a
+        searchedUsers:
+          - userId: 60d0fe4f7439346e18c6343b
+            searchTime: '2023-12-05T08:39:32.000Z'
+            deletedAt: null
+    User:
+      type: object
+      required:
+        - username
+        - nickname
+        - firstname
+        - lastname
+        - email
+        - gender
+        - isOnline
+        - lastOnline
+      properties:
+        username:
+          type: string
+          description: The username of the user.
+        nickname:
+          type: string
+          description: The nickname of the user.
+        firstname:
+          type: string
+          description: The first name of the user.
+        lastname:
+          type: string
+          description: The last name of the user.
+        dateOfBirth:
+          type: string
+          format: date-time
+          description: The date of birth of the user.
+        email:
+          type: string
+          description: The email of the user.
+        gender:
+          type: integer
+          enum:
+            - 0
+            - 1
+          description: The gender of the user. 0 for male, 1 for female.
+        phoneNumber:
+          type: string
+          description: The phone number of the user.
+        avatar:
+          $ref: '#/components/schemas/Image'
+        FCMtoken:
+          type: string
+          description: The Firebase Cloud Messaging token of the user.
+        friends:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: The ID of the friend.
+              createdAt:
+                type: string
+                format: date-time
+                description: The time when the friendship was created.
+        isOnline:
+          type: integer
+          enum:
+            - 0
+            - 1
+          description: Whether the user is online. 0 for offline, 1 for online.
+        lastOnline:
+          type: string
+          format: date-time
+          description: The last time the user was online.
+      example:
+        username: user1
+        nickname: User One
+        firstname: First
+        lastname: Last
+        dateOfBirth: '2000-01-01T00:00:00.000Z'
+        email: user1@example.com
+        gender: 0
+        phoneNumber: '1234567890'
+        avatar:
+          name: Avatar
+          url: https://example.com/avatar.jpg
+        FCMtoken: fcm-token
+        friends:
+          - userId: 60d0fe4f7439346e18c6343b
+            createdAt: '2023-12-05T08:39:32.000Z'
+        isOnline: 1
+        lastOnline: '2023-12-05T08:39:32.000Z'
+tags:
+  - name: Auth
+  - name: Chat
+  - name: FriendRequests
+  - name: Notifications
+  - name: Post
+  - name: Upload
+  - name: User
