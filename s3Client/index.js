@@ -52,6 +52,31 @@ class S3ClientClass {
       throw err;
     }
   }
+  async uploadVideo({ name, body, mimeType }) {
+    try {
+      const randomName = crypto.randomBytes(32).toString("hex");
+
+      const params = {
+        Bucket: this.bucketName,
+        Key: randomName,
+        Body: body,
+        ContentType: mimeType,
+      };
+
+      const uploadCommand = new PutObjectCommand(params);
+      const uploadResult = await this.s3.send(uploadCommand);
+      console.log("Upload successful:", uploadResult);
+
+      return {
+        fileId: randomName,
+        uploadResult,
+      };
+    } catch (err) {
+      console.error("Error uploading object:", err);
+      throw err;
+    }
+  }
+
   async getSignedUrl(key) {
     const getObjectParams = {
       Bucket: this.bucketName,

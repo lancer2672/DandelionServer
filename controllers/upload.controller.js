@@ -19,42 +19,40 @@ exports.handleUploadImage = async (req, res) => {
     });
     const results = await Promise.all(uploadPromises);
 
-    const fileIds = results.reduce((acc, item) => {
-      acc.push(item.fileId);
-      return acc;
-    }, []);
+    const fileData = await Promise.all(
+      results.map(async (item) => {
+        const url = await S3ClientIns.getSignedUrl(item.fileId);
+        return { id: item.fileId, url: url };
+      })
+    );
 
     new OK({
-      data: { fileIds: fileIds },
+      data: { files: fileData },
     }).send(res);
   } else {
     throw new BadRequestError("No files uploaded");
   }
 };
+
 exports.handleUploadVideo = async (req, res) => {
+  console.log("handle upload video: req.file", req.file);
   if (req.file) {
-    new OK({
-      data: { fileUrl: req.file.path },
-    }).send(res);
+    const args = {
+      name: req.file.originalname,
+      body: req.file.buffer,
+      mimeType: req.file.mimetype,
+    };
+    try {
+      const result = await S3ClientIns.uploadVideo(args);
+      const url = await S3ClientIns.getSignedUrl(result.fileId);
+      new OK({
+        data: { files: [{ id: result.fileId, url: url }] },
+      }).send(res);
+    } catch (err) {
+      console.error("Error uploading video:", err);
+      throw new InternalServerError("Error uploading video");
+    }
   } else {
     throw new BadRequestError("No files uploaded");
-  }
-};
-
-exports.handleGetFileUrl = async (req, res) => {
-  console.log("handle upload image: req.file", req.body);
-  const { fileIds } = req.body;
-  if (fileIds) {
-    const getUrlPromises = fileIds.map((fileId) => {
-      return S3ClientIns.getSignedUrl(fileId);
-    });
-    const fileUrls = await Promise.all(getUrlPromises);
-
-    console.log("results", fileUrls);
-    new OK({
-      data: { fileUrls: fileUrls },
-    }).send(res);
-  } else {
-    throw new BadRequestError();
   }
 };

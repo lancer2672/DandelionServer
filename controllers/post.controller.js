@@ -9,80 +9,89 @@ const {
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+const PostService = require("../services/post.service");
 
 exports.getAllPosts = async (req, res) => {
-  const posts = await Post.find({}).sort({ createdAt: -1 });
-  new OK({
-    message: "Get all posts success",
-    data: { posts },
-  }).send(res);
-};
-exports.getPostByUserId = async (req, res) => {
-  const userId = req.params.userId;
-  console.log("user", userId);
-  const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
-
-  if (posts.length === 0) {
-    throw new NotFoundError("No post found for the specified user");
+  try {
+    const posts = await PostService.getAllPosts();
+    new OK({
+      message: "Get all posts success",
+      data: { posts },
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
   }
-  new OK({
-    message: "Get all posts success",
-    data: { posts },
-  }).send(res);
+};
+
+exports.getPostByUserId = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const posts = await PostService.getPostByUserId(userId);
+
+    if (posts.length === 0) {
+      throw new NotFoundError("No post found for the specified user");
+    }
+    new OK({
+      message: "Get all posts success",
+      data: { posts },
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
+  }
 };
 
 exports.getPostById = async (req, res) => {
-  const { postId } = req.query;
-  const post = await Post.findById(postId);
+  try {
+    const { postId } = req.query;
+    const post = await PostService.getPostById(postId);
 
-  if (!post) {
-    throw new NotFoundError("No post found");
+    if (!post) {
+      throw new NotFoundError("No post found");
+    }
+    new OK({
+      message: "Get posts success",
+      data: { post },
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
   }
-  new OK({
-    message: "Get posts success",
-    data: { post },
-  }).send(res);
 };
+
 exports.handleReactPost = async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  let isReacted = post.likes.filter((item) => item.userId == req.userId);
-  if (isReacted.length === 0) {
-    post.likes.push({ userId: req.userId });
-  } else {
-    post.likes = post.likes.filter((item) => item.userId != req.userId);
+  try {
+    await PostService.handleReactPost(req.userId, req.params.id);
+    new OK({
+      message: "React success",
+      data: {},
+    }).send(res);
+  } catch (err) {
+    throw new InternalServerError();
   }
-  await post.save();
-  new OK({
-    message: "React success",
-    data: {},
-  }).send(res);
 };
 
 exports.handleDeleteComment = async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  const commentId = req.body.commentId;
-  const newComments = post.comments.filter(
-    (comment) => comment._id != commentId
+  const updatedComments = await PostService.handleDeleteComment(
+    req.params.id,
+    req.body.commentId
   );
-  post.comments = newComments;
-  await post.save();
   new OK({
     message: "Success",
-    data: { updatedComments: post.comments },
+    data: { updatedComments },
   }).send(res);
 };
 
 exports.handleCommentPost = async (req, res) => {
-  const post = await Post.findById(req.params.id);
   const newComment = {
     content: req.body.content,
     userId: req.userId,
   };
-  post.comments.push(newComment);
-  await post.save();
+  const updatedPost = await PostService.handleCommentPost(
+    req.params.id,
+    newComment
+  );
   new OK({
     message: "Success",
-    data: { updatedPost: post },
+    data: { updatedPost },
   }).send(res);
 };
 
@@ -95,24 +104,15 @@ exports.handleUpdatePost = async (req, res) => {
   if (image) {
     updatedPost.image = image;
   }
-  updatedPost = await Post.findOneAndUpdate(
-    { _id: req.params.id },
-    updatedPost,
-    {
-      new: true,
-    }
-  );
-  if (!updatedPost) {
-    throw new UnauthorizedError();
-  }
+  const post = await PostService.handleUpdatePost(req.params.id, updatedPost);
   new OK({
     message: "Success",
-    data: { updatedPost },
+    data: { updatedPost: post },
   }).send(res);
 };
 
 exports.handleDeletePost = async (req, res) => {
-  await Post.deleteOne({ _id: req.params.id });
+  await PostService.handleDeletePost(req.params.id);
   new OK({
     message: "Success",
     data: {},
@@ -120,23 +120,15 @@ exports.handleDeletePost = async (req, res) => {
 };
 
 exports.handleCreatePost = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new BadRequestError("Invalid information");
-  }
   const { description, image } = req.body;
-  console.log("imageUrl", image);
-
-  const newPost = new Post({
+  const newPostData = {
     description: description || " ",
     user: req.userId,
     comments: [],
     likes: [],
     image,
-  });
-  const savedPost = await newPost.save();
-  console.log("savedPost", savedPost);
-
+  };
+  const savedPost = await PostService.handleCreatePost(newPostData);
   new OK({
     message: "Success",
     data: { newPost: savedPost },

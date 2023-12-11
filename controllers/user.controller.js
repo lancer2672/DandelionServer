@@ -9,72 +9,42 @@ const {
   NotFoundError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
-
-const getDistinctSearchedUsers = async (userId) => {
-  const result = await SearchHistory.aggregate([
-    { $match: { user: mongoose.Types.ObjectId(userId) } },
-    { $unwind: "$searchedUsers" },
-    { $match: { "searchedUsers.deletedAt": { $exists: false } } },
-    { $group: { _id: "$searchedUsers.userId" } },
-    { $limit: 5 },
-  ]);
-
-  return result.map((item) => item._id);
-};
+const UserService = require("../services/user.service");
 
 exports.updateUser = async (req, res) => {
   try {
     const { nickname, email, gender, phoneNumber, dateOfBirth, avatar } =
       req.body;
     console.log("Avatar", avatar);
-    const user = await User.findById(req.userId);
-    if (!user) {
+
+    const userToUpdate = {
+      nickname,
+      email,
+      gender,
+      phoneNumber,
+      dateOfBirth,
+      avatar,
+    };
+
+    const updatedUser = await UserService.updateUser(req.userId, userToUpdate);
+
+    if (!updatedUser) {
       throw new NotFoundError("User not found");
     }
 
-    const userToUpdate = {
-      nickname: nickname || user.nickname,
-      email: email || user.email,
-      gender: gender || user.gender,
-      phoneNumber: phoneNumber || user.phoneNumber,
-      dateOfBirth: dateOfBirth || user.dateOfBirth,
-      avatar: avatar || user.avatar,
-    };
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: req.userId },
-      userToUpdate,
-      {
-        new: true,
-      }
-    );
-    const updatedVoximplantUser = {
-      userDisplayName: req.body.nickname || user.nickname,
-    };
-    await voximplantService.setUserInfo(updatedVoximplantUser);
-    if (!updatedUser) {
-      throw new BadRequestError("Update user failed");
-    }
     new OK({
-      message: "Success",
       data: { user: updatedUser },
     }).send(res);
   } catch (err) {
-    throw new InternalServerError("Cannot update user information");
+    console.error("Error updating user:", err);
+    throw new InternalServerError("Error updating user");
   }
 };
 
 exports.addUserToSearchHistory = async (req, res) => {
   try {
     const { userId } = req.body;
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-    await SearchHistory.updateOne(
-      { user: req.userId },
-      { $push: { searchedUsers: { userId, searchTime: new Date() } } },
-      { upsert: true }
-    );
+    await UserService.addUserToSearchHistory(req.userId, userId);
     new OK({
       message: "Success",
       data: {},
@@ -87,15 +57,7 @@ exports.addUserToSearchHistory = async (req, res) => {
 exports.removeUserFromSearchHistory = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-
-    await SearchHistory.updateOne(
-      { user: req.userId, "searchedUsers.userId": userId },
-      { $set: { "searchedUsers.$.deletedAt": new Date() } }
-    );
+    await UserService.removeUserFromSearchHistory(req.userId, userId);
     new OK({
       message: "Success",
       data: {},
@@ -109,24 +71,10 @@ exports.removeUserFromSearchHistory = async (req, res) => {
 exports.searchUsers = async (req, res) => {
   try {
     const { q: keyword } = req.query;
-    const users = await User.find({ nickname: new RegExp(keyword, "i") });
-
-    const mappedUser1 = users.filter((user) => {
-      //not get user of user itself
-      if (user.toObject()._id != req.userId) {
-        return user;
-      }
-    });
-    const mappedUser2 = mappedUser1.map((user) => {
-      const userObject = user.toObject();
-      if (userObject._id != req.userId) {
-        delete userObject.password;
-        return userObject;
-      }
-    });
+    const users = await UserService.searchUsers(keyword, req.userId);
     new OK({
       message: "Success",
-      data: mappedUser2,
+      data: users,
     }).send(res);
   } catch (err) {
     throw new InternalServerError();
@@ -135,37 +83,7 @@ exports.searchUsers = async (req, res) => {
 
 exports.getRecentSearchHistory = async (req, res) => {
   try {
-    const searchHistory = await SearchHistory.aggregate([
-      { $match: { user: mongoose.Types.ObjectId(req.userId) } },
-      { $unwind: "$searchedUsers" },
-      { $match: { "searchedUsers.deletedAt": { $exists: false } } },
-      {
-        $group: {
-          _id: "$searchedUsers.userId",
-          lastSearchTime: { $max: "$searchedUsers.searchTime" },
-        },
-      },
-      { $sort: { lastSearchTime: -1 } },
-      { $limit: 10 },
-      {
-        $lookup: {
-          from: "users",
-          let: { userId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-            { $project: { password: 0 } },
-          ],
-          as: "user",
-        },
-      },
-      {
-        $unwind: "$user",
-      },
-    ]);
-
-    const userIds = searchHistory.map((item) => item._id);
-    const users = await User.find({ _id: { $in: userIds } });
-
+    const users = await UserService.getRecentSearchHistory(req.userId);
     new OK({
       message: "Success",
       data: users,
@@ -177,10 +95,10 @@ exports.getRecentSearchHistory = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await UserService.getUserById(req.params.id);
     new OK({
       message: "Success",
-      data: { user },
+      data: user,
     }).send(res);
   } catch (err) {
     throw new InternalServerError();
@@ -190,12 +108,10 @@ exports.getUserById = async (req, res) => {
 exports.getListUser = async (req, res) => {
   try {
     const listIds = req.body.listIds;
-    const users = await User.find({ _id: { $in: listIds } }).select(
-      "-password"
-    );
+    const users = await UserService.getListUser(listIds);
     new OK({
       message: "Success",
-      data: { users },
+      data: users,
     }).send(res);
   } catch (err) {
     throw new InternalServerError();
@@ -204,10 +120,8 @@ exports.getListUser = async (req, res) => {
 
 exports.saveFCMtoken = async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
     const { token } = req.body;
-    user.FCMtoken = token;
-    await user.save();
+    await UserService.saveFCMtoken(req.userId, token);
     new OK({
       message: "Success",
       data: {},
@@ -219,15 +133,10 @@ exports.saveFCMtoken = async (req, res) => {
 
 exports.getAllFriends = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate("friends.userId");
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-    const friends = user.friends.map((friend) => friend.userId);
-    console.log("friends", friends);
+    const friends = await UserService.getAllFriends(req.userId);
     new OK({
       message: "Success",
-      data: { friends },
+      data: friends,
     }).send(res);
   } catch (err) {
     throw new InternalServerError();

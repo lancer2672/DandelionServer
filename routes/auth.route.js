@@ -19,7 +19,7 @@ const router = express.Router();
  *       200:
  *         description: Login successful
  */
-router.post("/login", verifyToken, errorHandler(AuthController.login));
+router.post("/login", errorHandler(AuthController.login));
 
 /**
  * @swagger
@@ -71,7 +71,7 @@ router.post(
  *       200:
  *         description: Registration successful
  */
-router.post("/register", verifyToken, errorHandler(AuthController.register));
+router.post("/register", errorHandler(AuthController.register));
 
 /**
  * @swagger

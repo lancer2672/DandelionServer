@@ -55,7 +55,7 @@ const createMessage = async function (data) {
     case "callHistory":
       attrs = { callHistory: { duration: data.duration } };
       break;
-    case "videoMessage":
+    case "video":
       attrs = { videos: data.videos };
       break;
     default:
@@ -189,8 +189,8 @@ const handleSaveCallhistory = async function (data) {
 const handleSendVideoMessage = async function (data) {
   const { channelId, userId } = data;
   try {
-    const newMess = await createMessage(data, "videoMessage");
-    emitMessage(channelId, newMess, "videoMessage");
+    const newMess = await createMessage(data, "video");
+    emitMessage(channelId, newMess, "video");
     const { receiver, sender } = await getChannelMembers(userId, channelId);
 
     await sendNotification({

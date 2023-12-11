@@ -10,12 +10,11 @@ const {
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 
+const ChatService = require("../services/chat.service");
+
 exports.getChannels = async (req, res) => {
   try {
-    const userId = req.userId;
-    const channels = await Channel.find({ memberIds: { $in: [userId] } }).sort({
-      lastUpdate: -1,
-    });
+    const channels = await ChatService.getChannels(req.userId);
     new OK({
       message: "Success",
       data: { channels },
@@ -24,13 +23,13 @@ exports.getChannels = async (req, res) => {
     throw new InternalServerError();
   }
 };
+
 exports.GetChannelMember = async (req, res) => {
   try {
-    const channel = await Channel.findById(req.params.channelId);
-    const memberIds = channel.memberIds;
-    const members = await User.find({
-      _id: { $in: memberIds, $ne: req.userId },
-    }).select("-password");
+    const members = await ChatService.getChannelMember(
+      req.params.channelId,
+      req.userId
+    );
     new OK({
       message: "Success",
       data: { members },
@@ -41,53 +40,26 @@ exports.GetChannelMember = async (req, res) => {
 };
 
 exports.getChannelMessages = async (req, res) => {
-  const channelId = req.params.channelId;
-  const channel = await Channel.findById(channelId);
-
-  if (!channel) {
-    throw new NotFoundError("Channel not found");
+  try {
+    const messages = await ChatService.getChannelMessages(req.params.channelId);
+    new OK({
+      message: "Success",
+      data: { messages },
+    }).send(res);
+  } catch (err) {
+    console.log("error", err);
+    throw new InternalServerError();
   }
-
-  const recentMessages = await Channel.aggregate([
-    { $match: { _id: mongoose.Types.ObjectId(channelId) } },
-    //get data from channelMessages property
-    { $unwind: "$channelMessages" },
-    { $sort: { "channelMessages.createdAt": -1 } },
-    // { $limit: 7 },
-    {
-      $group: {
-        _id: "$_id",
-        channelMessages: { $push: "$channelMessages" },
-      },
-    },
-    { $project: { _id: 0, channelMessages: 1 } },
-  ]);
-  new OK({
-    message: "Success",
-    data: {
-      messages:
-        recentMessages.length == 0 ? [] : recentMessages[0].channelMessages,
-    },
-  }).send(res);
 };
 
 exports.getLastMessage = async (req, res) => {
   try {
-    const channelId = req.params.channelId;
-    const channel = await Channel.findById(channelId).lean();
-    let lastMessage = null;
-    if (channel.channelMessages.length > 0) {
-      lastMessage = channel.channelMessages[0];
-    }
-    if (!channel) {
-      throw new NotFoundError("Channel not found");
-    }
+    const { lastMessage, channelId } = await ChatService.getLastMessage(
+      req.params.channelId
+    );
     new OK({
       message: "Success",
-      data: {
-        lastMessage,
-        channelId,
-      },
+      data: { lastMessage, channelId },
     }).send(res);
   } catch (err) {
     throw new InternalServerError();
@@ -95,27 +67,15 @@ exports.getLastMessage = async (req, res) => {
 };
 
 exports.findOrCreateChannel = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    throw new NotFoundError("Channel not found");
-  }
-  const { channelName = "", memberIds } = req.body;
   try {
-    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
-    if (!channel) {
-      channel = new Channel({
-        channelName,
-        memberIds,
-        channelMessages: [],
-        isInWaitingList: true,
-      });
-      await channel.save();
-    }
+    const { channelName = "", memberIds } = req.body;
+    const channel = await ChatService.findOrCreateChannel(
+      channelName,
+      memberIds
+    );
     new OK({
       message: "Success",
-      data: {
-        channel,
-      },
+      data: { channel },
     }).send(res);
   } catch (err) {
     throw new InternalServerError();
