@@ -45,17 +45,17 @@ router.post(
 
 /**
  * @swagger
- * /upload/get-url:
- *   post:
+ * /upload/update-url:
+ *   put:
  *     tags: [Upload]
  *     responses:
  *       200:
- *         description: File URL retrieved successfully
+ *         description: URL updated successfully
  */
-router.post(
-  "/get-url",
+router.put(
+  "/update-url",
   verifyToken,
-  errorHandler(UploadController.handleGetFileUrl)
+  errorHandler(UploadController.updateUrl)
 );
 
 module.exports = router;

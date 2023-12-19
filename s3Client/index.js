@@ -7,6 +7,9 @@ const crypto = require("crypto");
 const sharp = require("sharp");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
+// const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
+const ONE_DAY_IN_SECONDS = 60;
+
 class S3ClientClass {
   constructor() {
     this.bucketRegion = process.env.BUCKET_REGION;
@@ -83,7 +86,9 @@ class S3ClientClass {
       Key: key,
     };
     const getCommand = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(this.s3, getCommand, { expiresIn: 3600 });
+    const url = await getSignedUrl(this.s3, getCommand, {
+      expiresIn: ONE_DAY_IN_SECONDS,
+    });
     return url;
   }
 }

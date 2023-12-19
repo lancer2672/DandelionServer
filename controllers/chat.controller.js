@@ -41,7 +41,12 @@ exports.GetChannelMember = async (req, res) => {
 
 exports.getChannelMessages = async (req, res) => {
   try {
-    const messages = await ChatService.getChannelMessages(req.params.channelId);
+    const { limit, skip = 0 } = req.query;
+    const messages = await ChatService.getChannelMessages(
+      req.params.channelId,
+      limit,
+      skip
+    );
     new OK({
       message: "Success",
       data: { messages },

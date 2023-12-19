@@ -66,6 +66,9 @@ const CredentialSchema = new Schema(
       type: String,
       required: true,
     },
+    publicKey: {
+      type: String,
+    },
     accessToken: {
       type: String,
       default: null,

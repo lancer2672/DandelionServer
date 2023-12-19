@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const User = require("../models/user.model");
 const SearchHistory = require("../models/searchhistory.model");
-const voximplantService = require("../voximplant");
 const {
   BadRequestError,
   UnauthorizedError,

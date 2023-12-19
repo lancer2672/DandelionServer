@@ -7,6 +7,7 @@ const {
   NotFoundError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+const S3ClientIns = require("../s3Client");
 
 class UserService {
   static async updateUser(userId, userToUpdate) {
@@ -125,6 +126,17 @@ class UserService {
     }
     const friends = user.friends.map((friend) => friend.userId);
     return { friends };
+  }
+  static async updateUrl({ userId, fileId }) {
+    const newUrl = await S3ClientIns.getSignedUrl(fileId);
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+    user.avatar.url = newUrl;
+    console.log("updateUrl", newUrl);
+    await user.save();
+    return { url: newUrl };
   }
 }
 

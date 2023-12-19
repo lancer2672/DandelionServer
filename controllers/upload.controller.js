@@ -5,6 +5,9 @@ const {
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const S3ClientIns = require("../s3Client/index");
+const UserService = require("../services/user.service");
+const PostService = require("../services/post.service");
+const ChatService = require("../services/chat.service");
 
 exports.handleUploadImage = async (req, res) => {
   console.log("handle upload image: req.file", req.files);
@@ -55,4 +58,28 @@ exports.handleUploadVideo = async (req, res) => {
   } else {
     throw new BadRequestError("No files uploaded");
   }
+};
+
+exports.updateUrl = async (req, res) => {
+  const { type, ...data } = req.body;
+
+  let resData;
+  switch (type) {
+    case "user":
+      resData = await UserService.updateUrl(data);
+      break;
+    case "post":
+      resData = await PostService.updateUrl(data);
+      break;
+    case "message":
+      resData = await ChatService.updateUrl(data);
+      break;
+    default:
+      throw new BadRequestError("Invalid type");
+  }
+
+  new OK({
+    message: "URL updated successfully",
+    data: resData,
+  }).send(res);
 };

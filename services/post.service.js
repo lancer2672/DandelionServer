@@ -3,6 +3,7 @@ const {
   NotFoundError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
+const S3ClientIns = require("../s3Client");
 
 class PostService {
   static async getAllPosts() {
@@ -87,6 +88,16 @@ class PostService {
     const newPost = new Post(newPostData);
     const savedPost = await newPost.save();
     return savedPost;
+  }
+  static async updateUrl({ postId, fileId }) {
+    const newUrl = await S3ClientIns.getSignedUrl(fileId);
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new NotFoundError("Post not found");
+    }
+    post.image.url = newUrl;
+    await post.save();
+    return { url: newUrl };
   }
 }
 

@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const Channel = require("../models/channel.model");
+const { Message } = require("../models/message.model");
 const User = require("../models/user.model");
 const { validationResult } = require("express-validator");
 const {
@@ -9,6 +10,7 @@ const {
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+const S3ClientIns = require("../s3Client");
 
 class ChatService {
   static async getChannels(userId) {
@@ -32,36 +34,20 @@ class ChatService {
     }).select("-password");
     return members;
   }
-
-  static async getChannelMessages(channelId) {
-    const channel = await Channel.findById(channelId);
-    if (!channel) {
-      throw new NotFoundError("Channel not found");
-    }
-    const recentMessages = await Channel.aggregate([
-      { $match: { _id: mongoose.Types.ObjectId(channelId) } },
-      { $unwind: "$channelMessages" },
-      { $sort: { "channelMessages.createdAt": -1 } },
-      {
-        $group: {
-          _id: "$_id",
-          channelMessages: { $push: "$channelMessages" },
-        },
-      },
-      { $project: { _id: 0, channelMessages: 1 } },
-    ]);
-    return recentMessages.length == 0 ? [] : recentMessages[0].channelMessages;
+  static async getChannelMessages(channelId, limit, skip) {
+    const messages = await Message.find({ channelId: channelId })
+      .sort({ createdAt: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
+    return messages;
   }
 
   static async getLastMessage(channelId) {
-    const channel = await Channel.findById(channelId).lean();
-    if (!channel) {
-      throw new NotFoundError("Channel not found");
-    }
-    let lastMessage = null;
-    if (channel.channelMessages.length > 0) {
-      lastMessage = channel.channelMessages[0];
-    }
+    const lastMessage = await Message.findOne({
+      channelId: channelId,
+    }).sort({
+      createdAt: -1,
+    });
     return { lastMessage, channelId };
   }
   static async findOrCreateChannel(channelName = "", memberIds) {
@@ -76,6 +62,24 @@ class ChatService {
       await channel.save();
     }
     return channel;
+  }
+  static async updateUrl({ messageId, fileId }) {
+    const newUrl = await S3ClientIns.getSignedUrl(fileId);
+    const message = await Message.findById(messageId);
+    if (!message) {
+      throw new NotFoundError("Message not found");
+    }
+    if (message.type === "video") {
+      message.attrs.video.url = newUrl;
+    }
+    if (message.type === "image") {
+      let updatedIndex = message.attrs.images.find(
+        (img) => img.name === fileId
+      );
+      message.attrs.images[updatedIndex] = newUrl;
+    }
+    await message.save();
+    return { url: newUrl };
   }
 }
 

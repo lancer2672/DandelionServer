@@ -120,6 +120,24 @@ paths:
           description: ID of the chat channel
           schema:
             type: string
+        - in: query
+          name: skip
+          required: false
+          description: Number of messages to skip
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          required: false
+          description: Maximum number of messages to retrieve
+          schema:
+            type: integer
+        - in: header
+          name: Authorization
+          required: true
+          description: Bearer token for authentication
+          schema:
+            type: string
       responses:
         '200':
           description: Messages retrieved successfully
@@ -272,13 +290,13 @@ paths:
       responses:
         '200':
           description: Video uploaded successfully
-  /upload/get-url:
-    post:
+  /upload/update-url:
+    put:
       tags:
         - Upload
       responses:
         '200':
-          description: File URL retrieved successfully
+          description: URL updated successfully
   /user/friend/get-all:
     get:
       tags:
@@ -375,18 +393,12 @@ components:
         isInWaitingList:
           type: boolean
           description: If user A and B are not friends, this is true.
-        channelMessages:
-          type: array
-          items:
-            $ref: '#/components/schemas/Message'
-          description: The messages in the channel.
       example:
         channelName: Channel 1
         memberIds:
           - 60d0fe4f7439346e18c6343a
         lastUpdate: '2023-12-05T08:39:32.000Z'
         isInWaitingList: false
-        channelMessages: []
     Credential:
       type: object
       required:
@@ -505,6 +517,9 @@ components:
         userId:
           type: string
           description: The ID of the user who sent the message.
+        channelId:
+          type: string
+          description: The ID of channel.
         type:
           type: string
           enum:

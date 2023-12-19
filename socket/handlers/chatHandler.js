@@ -1,5 +1,6 @@
 const ChatChannel = require("../../models/channel.model");
 const Channel = require("../../models/channel.model");
+const { Message } = require("../../models/message.model");
 const User = require("../../models/user.model");
 const Global = require("../global");
 const {
@@ -39,6 +40,7 @@ const createMessage = async function (data) {
   const { channelId, userId, type } = data;
   console.log("createMessage", data);
   let newMess = {
+    channelId,
     userId,
     type,
     isSeen: false,
@@ -64,13 +66,12 @@ const createMessage = async function (data) {
   newMess.attrs = attrs;
   console.log("newmess", newMess);
 
-  const chatChannel = await Channel.findById(channelId);
-  chatChannel.channelMessages.unshift(newMess);
-  chatChannel.lastUpdate = new Date();
-  const savedChatChannel = await chatChannel.save();
+  const newMessage = new Message(newMess);
+  const savedMessage = await newMessage.save();
 
-  // Get the last message in the array, which is the one we just added
-  const savedMessage = savedChatChannel.channelMessages[0];
+  const chatChannel = await Channel.findById(channelId);
+  chatChannel.lastUpdate = new Date();
+  await chatChannel.save();
 
   return savedMessage;
 };

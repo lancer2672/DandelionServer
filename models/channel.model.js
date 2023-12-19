@@ -30,17 +30,11 @@ const { MessageSchema } = require("./message.model");
  *         isInWaitingList:
  *           type: boolean
  *           description: If user A and B are not friends, this is true.
- *         channelMessages:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/Message'
- *           description: The messages in the channel.
  *       example:
  *         channelName: "Channel 1"
  *         memberIds: ["60d0fe4f7439346e18c6343a"]
  *         lastUpdate: "2023-12-05T08:39:32.000Z"
  *         isInWaitingList: false
- *         channelMessages: []
  */
 
 const ChannelSchema = new Schema(
@@ -63,7 +57,7 @@ const ChannelSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    channelMessages: [MessageSchema],
+    // channelMessages: [MessageSchema],
   },
   { timestamps: true }
 );

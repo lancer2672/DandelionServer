@@ -86,10 +86,29 @@ router.get(
  *         description: ID of the chat channel
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: skip
+ *         required: false
+ *         description: Number of messages to skip
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Maximum number of messages to retrieve
+ *         schema:
+ *           type: integer
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         description: Bearer token for authentication
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Messages retrieved successfully
  */
+
 router.get(
   "/messages/:channelId",
   verifyToken,

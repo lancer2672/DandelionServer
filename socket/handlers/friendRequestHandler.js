@@ -91,8 +91,9 @@ const handleAcceptFriendRequest = async (request) => {
   socketIO.to(receiverSocketId).emit("response-friendRequest", responseData);
   console.log("newChannel Sent");
 };
-const unFriend = async (socketIO, data) => {
+const unFriend = async (data) => {
   const { userId, friendId } = data;
+  const socketIO = Global.socketIO;
   const userSocketId = Global.onlineUsers[userId]?.socketId;
   const friendSocketId = Global.onlineUsers[data.friendId]?.socketId;
 

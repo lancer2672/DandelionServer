@@ -18,6 +18,9 @@ const { ImageSchema, VideoSchema } = require("./media.model");
  *         userId:
  *           type: string
  *           description: The ID of the user who sent the message.
+ *         channelId:
+ *           type: string
+ *           description: The ID of channel.
  *         type:
  *           type: string
  *           enum: [text, image, video, callHistory]
@@ -91,6 +94,10 @@ const { ImageSchema, VideoSchema } = require("./media.model");
 
 const MessageSchema = new Schema(
   {
+    channelId: {
+      type: Schema.Types.ObjectId,
+      ref: "channel",
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "user",
@@ -137,8 +144,11 @@ const CallMessageSchema = new Schema({
     },
   },
 });
+
+const Message = mongoose.model("message", MessageSchema);
+
 module.exports = {
-  MessageSchema,
+  Message,
   CallMessageSchema,
   TextMessageSchema,
   ImageMessageSchema,
