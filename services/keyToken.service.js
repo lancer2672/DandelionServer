@@ -7,10 +7,10 @@ class KeyTokenService {
       const publicKeyString = publicKey.toString();
       const tokens = await Credientials.create({
         user: userId,
-        publicKey: publicKeyString,
+        publicKey: publicKey,
       });
-      console.log("Tokens", tokens);
-      return tokens ? publicKeyString : null;
+      console.log("Tokens", { publicKey, publicKeyString });
+      // return tokens ? publicKeyString : null;
     } catch (er) {
       console.log(er);
     }

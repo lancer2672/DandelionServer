@@ -11,13 +11,43 @@ const router = express.Router();
  *   name: Auth
  */
 /**
+/** 
  * @swagger
  * /auth/login:
  *   post:
  *     tags: [Auth]
+ *     description: Login to the application
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             email:
+ *               type: string
+ *               description: Email to use for login.
+ *             password:
+ *               type: string
+ *               description: User's password.
  *     responses:
  *       200:
  *         description: Login successful
+ *         schema:
+ *           type: object
+ *           properties:
+ *             token:
+ *               type: string
+ *               description: The access token.
+ *             refreshToken:
+ *               type: string
+ *               description: The refresh token.
+ *             user:
+ *               $ref: '#/definitions/User'
+ *       400:
+ *         description: Incorrect information
+ *       404:
+ *         description: User does not exist or has not been verified
  */
 router.post("/login", errorHandler(AuthController.login));
 
@@ -99,7 +129,7 @@ router.post(
  */
 router.post(
   "/send-email-verification",
-  verifyToken,
+
   errorHandler(AuthController.sendEmailVerification)
 );
 
@@ -114,7 +144,7 @@ router.post(
  */
 router.get(
   "/verify-email",
-  verifyToken,
+
   errorHandler(AuthController.verifyEmail)
 );
 

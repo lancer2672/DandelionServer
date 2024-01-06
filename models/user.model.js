@@ -8,7 +8,6 @@ const { ImageSchema, VideoSchema } = require("./media.model");
  *     User:
  *       type: object
  *       required:
- *         - username
  *         - nickname
  *         - firstname
  *         - lastname
@@ -17,9 +16,6 @@ const { ImageSchema, VideoSchema } = require("./media.model");
  *         - isOnline
  *         - lastOnline
  *       properties:
- *         username:
- *           type: string
- *           description: The username of the user.
  *         nickname:
  *           type: string
  *           description: The nickname of the user.
@@ -69,7 +65,6 @@ const { ImageSchema, VideoSchema } = require("./media.model");
  *           format: date-time
  *           description: The last time the user was online.
  *       example:
- *         username: "user1"
  *         nickname: "User One"
  *         firstname: "First"
  *         lastname: "Last"
@@ -86,10 +81,6 @@ const { ImageSchema, VideoSchema } = require("./media.model");
 
 const UserSchema = new Schema(
   {
-    username: {
-      type: String,
-      required: true,
-    },
     nickname: {
       type: String,
       required: true,

@@ -100,15 +100,15 @@ class UserService {
     return mappedUser2;
   }
 
-  static async getUserById(id) {
-    const user = await User.findById(id).select("-password");
+  static async getUserById(id, select = { password: 2 }) {
+    const user = await User.findById(id).select(select).lean();
     return { user };
   }
 
-  static async getListUser(listIds) {
-    const users = await User.find({ _id: { $in: listIds } }).select(
-      "-password"
-    );
+  static async getListUser(listIds, select = { password: 2 }) {
+    const users = await User.find({ _id: { $in: listIds } })
+      .select(select)
+      .lean();
     return { users };
   }
 

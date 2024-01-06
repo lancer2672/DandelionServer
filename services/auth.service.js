@@ -1,28 +1,18 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Credential = require("../models/credentials.model");
-const { validationResult } = require("express-validator");
+const jwt = require("jsonwebtoken");
 const {
   BadRequestError,
   UnauthorizedError,
   NotFoundError,
   InternalServerError,
 } = require("../classes/error/ErrorResponse");
-
-class AccessService {
-  static generateAccessToken = (userId) => {
-    return jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    });
-  };
-
-  static generateRefreshToken = (userId) => {
-    return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    });
-  };
-
+const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
+const { OAuth2Client } = require("google-auth-library");
+const { sendVerificationEmail } = require("../mailer");
+const KeyTokenService = require("./keyToken.service");
+const AuthUtils = require("../auth/auth.utils");
+class AuthService {
   static register = async ({
     password,
     email,
@@ -31,11 +21,6 @@ class AccessService {
     dateOfBirth,
   }) => {
     const nickname = `${lastname} ${firstname}`;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      throw new BadRequestError("Invalid information");
-    }
-
     const existUser = await User.findOne({ email: email.toLowerCase() });
     const existCredential = existUser
       ? await Credential.findOne({ user: existUser._id })
@@ -45,44 +30,29 @@ class AccessService {
       throw new BadRequestError("Email is already taken");
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
-    let newUser;
-    if (existUser) {
-      newUser = existUser;
-      newUser.username = email.toLowerCase();
-      newUser.lastname = lastname;
-      newUser.firstname = firstname;
-      newUser.dateOfBirth = dateOfBirth;
-      newUser.nickname = nickname;
-    } else {
-      newUser = new User({
-        username: email.toLowerCase(),
-        email: email.toLowerCase(),
-        avatar: {},
-        lastname,
-        firstname,
-        dateOfBirth,
-        nickname,
-      });
-    }
+    const passwordHash = await AuthUtils.hashPassword(password);
+
+    let newUser = new User({
+      email: email.toLowerCase(),
+      avatar: {},
+      lastname,
+      firstname,
+      dateOfBirth,
+      nickname,
+    });
 
     await newUser.save();
-    let newCredential;
-    if (existCredential) {
-      newCredential = existCredential;
-      newCredential.password = passwordHash;
-    } else {
-      newCredential = new Credential({
-        user: newUser._id,
-        password: passwordHash,
-        refreshTokensUsed: [],
-        emailVerificationCode: null,
-        emailVerified: false,
-        emailVerificationCodeExpires: null,
-      });
-    }
+    const { privateKey, publicKey } = AuthUtils.generateKeyPair();
 
-    await newCredential.save();
+    let credential = new Credential({
+      user: newUser._id,
+      password: passwordHash,
+      refreshTokensUsed: [],
+      publicKey,
+    });
+
+    console.log({ privateKey, publicKey });
+    await credential.save();
     return newUser;
   };
 
@@ -97,12 +67,27 @@ class AccessService {
       throw new NotFoundError("User has not been verified");
     }
 
-    const compareRes = await bcrypt.compare(password, existCredential.password);
+    const compareRes = await AuthUtils.comparePasswords(
+      password,
+      existCredential.password
+    );
+
+    if (!compareRes) {
+    }
     if (compareRes) {
-      const accessToken = this.generateAccessToken(existUser._id);
-      const refreshToken = this.generateRefreshToken(existUser._id);
+      const { privateKey, publicKey } = AuthUtils.generateKeyPair();
+      console.log({ privateKey, publicKey });
+      const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
+        { userId: existUser._id },
+        publicKey,
+        privateKey
+      );
+      console.log({ accessToken, refreshToken });
+
       existCredential.accessToken = accessToken;
       existCredential.refreshToken = refreshToken;
+      existCredential.publicKey = publicKey;
+      existCredential.privateKey = privateKey;
       await existCredential.save();
 
       return {
@@ -114,6 +99,7 @@ class AccessService {
       throw new BadRequestError("Incorrect information");
     }
   };
+
   static loginWithGoogle = async ({ idToken }) => {
     const client = new OAuth2Client(process.env.CLIENT_ID);
     const ticket = await client.verifyIdToken({
@@ -124,37 +110,39 @@ class AccessService {
     const email = payload["email"];
     const familyName = payload["family_name"];
     const givenName = payload["given_name"];
-    const picture = payload["picture"];
 
     let user = await User.findOne({ email: email.toLowerCase() });
     let credential = user ? await Credential.findOne({ user: user._id }) : null;
 
-    const accessToken = this.generateAccessToken(user._id);
-    const refreshToken = this.generateRefreshToken(user._id);
+    const { privateKey, publicKey } = AuthUtils.generateKeyPair();
 
     if (!user) {
       const nickname = familyName + " " + givenName;
       user = new User({
         email,
-        username: email,
         nickname,
         firstname: givenName,
         lastname: familyName,
       });
 
       await user.save();
-
+      const passwordHash = await AuthUtils.hashPassword(password);
       credential = new Credential({
         user: user._id,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        password: passwordHash,
+        publicKey,
         refreshTokensUsed: [],
-        emailVerificationCode: null,
-        emailVerified: true,
-        emailVerificationCodeExpires: null,
       });
       await credential.save();
-    } else if (credential) {
+    }
+
+    const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
+      { userId: user._id },
+      publicKey,
+      privateKey
+    );
+
+    if (credential) {
       credential.accessToken = accessToken;
       credential.refreshToken = refreshToken;
       await credential.save();
@@ -162,7 +150,7 @@ class AccessService {
 
     return {
       message: "User logged in successfully",
-      data: { token: accessToken, user },
+      data: { token: accessToken, refreshToken, user },
     };
   };
   static refreshToken = async ({ refreshToken }) => {
@@ -187,22 +175,24 @@ class AccessService {
             }
           }
           const userId = decoded.userId;
-          const newAccessToken = this.generateAccessToken(userId);
-          credential.accessToken = newAccessToken;
+          const { accessToken } = await AuthUtils.generateTokenPair(
+            { userId },
+            credential.publicKey,
+            credential.privateKey
+          );
+          credential.accessToken = accessToken;
 
           await credential.save();
 
-          resolve(newAccessToken);
+          resolve(accessToken);
         }
       );
     });
   };
-
-  static verifyEmail = async ({ code, password, isResetPassword }) => {
+  static verifyEmail = async ({ code, password }) => {
     const credential = await Credential.findOne({
       emailVerificationCode: code,
     });
-
     if (!credential) {
       throw new BadRequestError("Invalid verification code");
     }
@@ -211,22 +201,17 @@ class AccessService {
       throw new BadRequestError("Verification code has expired");
     }
 
-    const user = await User.findById(credential.user);
-
-    if (JSON.parse(isResetPassword) == false) {
-      credential.emailVerified = true;
-    }
+    credential.emailVerified = true;
     credential.emailVerificationCode = null;
     credential.emailVerificationCodeExpires = null;
 
     await credential.save();
   };
-
   static sendEmailVerification = async ({ email }) => {
     if (!email) {
       throw new BadRequestError("Email is empty");
     }
-    const code = generateVerificationCode();
+    const code = AuthUtils.generateVerificationCode();
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
 
@@ -250,18 +235,39 @@ class AccessService {
     const user = await User.findOne({ email: email.toLowerCase() });
     const credential = await Credential.findOne({ user: user._id });
 
-    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const passwordHash = await AuthUtils.hashPassword(newPassword);
     credential.password = passwordHash;
     try {
       await credential.save();
     } catch (err) {
       throw new InternalServerError("Update password failed");
     }
+    return user;
+  };
+  static changePassword = async ({ userId, currentPassword, newPassword }) => {
+    const user = await User.findById(userId);
+    const credential = await Credential.findOne({ user: user._id });
 
-    credential.emailVerificationCode = null;
-    credential.emailVerificationCodeExpires = null;
+    const isMatch = await AuthUtils.comparePasswords(
+      currentPassword,
+      credential.password
+    );
+
+    if (!isMatch) {
+      throw new BadRequestError("Password is incorrect");
+    }
+
+    const passwordHash = await AuthUtils.hashPassword(newPassword);
+    credential.password = passwordHash;
+
+    try {
+      await credential.save();
+    } catch (err) {
+      throw new InternalServerError("Update password failed");
+    }
+
     return user;
   };
 }
 
-module.exports = AccessService;
+module.exports = AuthService;
