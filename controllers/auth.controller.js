@@ -99,19 +99,7 @@ exports.resetPassword = async (req, res) => {
   }).send(res);
 };
 exports.logout = async (req, res) => {
-  const user = await User.findById(req.userId);
-  const credential = await Credential.findOne({ user: user._id });
-
-  if (!credential) {
-    throw new BadRequestError();
-  }
-
-  credential.refreshTokensUsed.push(credential.refreshToken);
-  credential.refreshToken = null;
-  credential.accessToken = null;
-
-  await credential.save();
-
+  await AuthService.logout(req.credential);
   new OK({
     message: "Logout successfully",
     data: {},

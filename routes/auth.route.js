@@ -2,6 +2,7 @@ const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const AuthController = require("../controllers/auth.controller");
 const errorHandler = require("../middleware/errorHandler");
+const AuthUtils = require("../auth/auth.utils");
 
 const router = express.Router();
 
@@ -53,6 +54,47 @@ router.post("/login", errorHandler(AuthController.login));
 
 /**
  * @swagger
+ * /auth/register:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Registration successful
+ */
+router.post("/register", errorHandler(AuthController.register));
+
+/**
+ * @swagger
+ * /auth/send-email-verification:
+ *   post:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Email verification sent successfully
+ */
+router.post(
+  "/send-email-verification",
+
+  errorHandler(AuthController.sendEmailVerification)
+);
+
+/**
+ * @swagger
+ * /auth/verify-email:
+ *   get:
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ */
+router.get(
+  "/verify-email",
+
+  errorHandler(AuthController.verifyEmail)
+);
+
+/**
+ * @swagger
  * /auth/logout:
  *   post:
  *     tags: [Auth]
@@ -60,6 +102,7 @@ router.post("/login", errorHandler(AuthController.login));
  *       200:
  *         description: Logout successful
  */
+router.use(AuthUtils.verifyAuthentication);
 router.post("/logout", verifyToken, errorHandler(AuthController.logout));
 
 /**
@@ -91,18 +134,6 @@ router.post(
   verifyToken,
   errorHandler(AuthController.loginWithGoogle)
 );
-
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     tags: [Auth]
- *     responses:
- *       200:
- *         description: Registration successful
- */
-router.post("/register", errorHandler(AuthController.register));
-
 /**
  * @swagger
  * /auth/refresh-token:
@@ -116,36 +147,6 @@ router.post(
   "/refresh-token",
   verifyToken,
   errorHandler(AuthController.refreshToken)
-);
-
-/**
- * @swagger
- * /auth/send-email-verification:
- *   post:
- *     tags: [Auth]
- *     responses:
- *       200:
- *         description: Email verification sent successfully
- */
-router.post(
-  "/send-email-verification",
-
-  errorHandler(AuthController.sendEmailVerification)
-);
-
-/**
- * @swagger
- * /auth/verify-email:
- *   get:
- *     tags: [Auth]
- *     responses:
- *       200:
- *         description: Email verified successfully
- */
-router.get(
-  "/verify-email",
-
-  errorHandler(AuthController.verifyEmail)
 );
 
 /**

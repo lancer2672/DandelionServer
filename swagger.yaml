@@ -39,6 +39,27 @@ paths:
           description: Incorrect information
         '404':
           description: User does not exist or has not been verified
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Registration successful
+  /auth/send-email-verification:
+    post:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Email verification sent successfully
+  /auth/verify-email:
+    get:
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Email verified successfully
   /auth/logout:
     post:
       tags:
@@ -60,13 +81,6 @@ paths:
       responses:
         '200':
           description: Login with Google successful
-  /auth/register:
-    post:
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: Registration successful
   /auth/refresh-token:
     post:
       tags:
@@ -74,20 +88,6 @@ paths:
       responses:
         '200':
           description: Token refreshed successfully
-  /auth/send-email-verification:
-    post:
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: Email verification sent successfully
-  /auth/verify-email:
-    get:
-      tags:
-        - Auth
-      responses:
-        '200':
-          description: Email verified successfully
   /auth/reset-password:
     put:
       tags:

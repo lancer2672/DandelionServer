@@ -10,7 +10,7 @@ const {
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const { OAuth2Client } = require("google-auth-library");
 const { sendVerificationEmail } = require("../mailer");
-const KeyTokenService = require("./keyToken.service");
+const CredentialService = require("./credential.service");
 const AuthUtils = require("../auth/auth.utils");
 class AuthService {
   static register = async ({
@@ -23,7 +23,7 @@ class AuthService {
     const nickname = `${lastname} ${firstname}`;
     const existUser = await User.findOne({ email: email.toLowerCase() });
     const existCredential = existUser
-      ? await Credential.findOne({ user: existUser._id })
+      ? await CredentialService.findByUserId(existUser._id)
       : null;
 
     if (existCredential && existCredential.emailVerified) {
@@ -42,27 +42,25 @@ class AuthService {
     });
 
     await newUser.save();
+
     const { privateKey, publicKey } = AuthUtils.generateKeyPair();
 
-    let credential = new Credential({
-      user: newUser._id,
+    await CredentialService.createCredential({
+      user: newUser,
       password: passwordHash,
-      refreshTokensUsed: [],
       publicKey,
+      privateKey,
     });
 
-    console.log({ privateKey, publicKey });
-    await credential.save();
     return newUser;
   };
-
   static login = async ({ email, password }) => {
     const existUser = await User.findOne({ email: email.toLowerCase() });
     if (!existUser) {
       throw new NotFoundError("User does not exist");
     }
 
-    const existCredential = await Credential.findOne({ user: existUser._id });
+    const existCredential = await CredentialService.findByUserId(existUser._id);
     if (!existCredential || !existCredential.emailVerified) {
       throw new NotFoundError("User has not been verified");
     }
@@ -76,19 +74,18 @@ class AuthService {
     }
     if (compareRes) {
       const { privateKey, publicKey } = AuthUtils.generateKeyPair();
-      console.log({ privateKey, publicKey });
       const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
         { userId: existUser._id },
         publicKey,
         privateKey
       );
-      console.log({ accessToken, refreshToken });
-
-      existCredential.accessToken = accessToken;
-      existCredential.refreshToken = refreshToken;
-      existCredential.publicKey = publicKey;
-      existCredential.privateKey = privateKey;
-      await existCredential.save();
+      await CredentialService.updateCredential({
+        credential: existCredential,
+        accessToken,
+        refreshToken,
+        publicKey,
+        privateKey,
+      });
 
       return {
         token: accessToken,
@@ -99,59 +96,57 @@ class AuthService {
       throw new BadRequestError("Incorrect information");
     }
   };
-
   static loginWithGoogle = async ({ idToken }) => {
-    const client = new OAuth2Client(process.env.CLIENT_ID);
-    const ticket = await client.verifyIdToken({
-      idToken,
-      audience: process.env.CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const email = payload["email"];
-    const familyName = payload["family_name"];
-    const givenName = payload["given_name"];
-
-    let user = await User.findOne({ email: email.toLowerCase() });
-    let credential = user ? await Credential.findOne({ user: user._id }) : null;
-
-    const { privateKey, publicKey } = AuthUtils.generateKeyPair();
-
-    if (!user) {
-      const nickname = familyName + " " + givenName;
-      user = new User({
-        email,
-        nickname,
-        firstname: givenName,
-        lastname: familyName,
-      });
-
-      await user.save();
-      const passwordHash = await AuthUtils.hashPassword(password);
-      credential = new Credential({
-        user: user._id,
-        password: passwordHash,
-        publicKey,
-        refreshTokensUsed: [],
-      });
-      await credential.save();
-    }
-
-    const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
-      { userId: user._id },
-      publicKey,
-      privateKey
-    );
-
-    if (credential) {
-      credential.accessToken = accessToken;
-      credential.refreshToken = refreshToken;
-      await credential.save();
-    }
-
-    return {
-      message: "User logged in successfully",
-      data: { token: accessToken, refreshToken, user },
-    };
+    // const client = new OAuth2Client(process.env.CLIENT_ID);
+    // const ticket = await client.verifyIdToken({
+    //   idToken,
+    //   audience: process.env.CLIENT_ID,
+    // });
+    // const payload = ticket.getPayload();
+    // const email = payload["email"];
+    // const familyName = payload["family_name"];
+    // const givenName = payload["given_name"];
+    // let user = await User.findOne({ email: email.toLowerCase() });
+    // let credential = user ? await Credential.findOne({ user: user._id }) : null;
+    // if (!user) {
+    //   const nickname = familyName + " " + givenName;
+    //   user = new User({
+    //     email,
+    //     nickname,
+    //     firstname: givenName,
+    //     lastname: familyName,
+    //   });
+    //   await user.save();
+    //   const passwordHash = await AuthUtils.hashPassword(password);
+    //   const { privateKey, publicKey } = AuthUtils.generateKeyPair();
+    //   await CredentialService.createCredential({
+    //     user,
+    //     password: passwordHash,
+    //     publicKey,
+    //     privateKey,
+    //   });
+    // }
+    // const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
+    //   { userId: user._id },
+    //   publicKey,
+    //   privateKey
+    // );
+    // await CredentialService.updateCredential({
+    //   credential,
+    //   accessToken,
+    //   refreshToken,
+    //   publicKey,
+    //   privateKey,
+    // });
+    // if (credential) {
+    //   credential.accessToken = accessToken;
+    //   credential.refreshToken = refreshToken;
+    //   await credential.save();
+    // }
+    // return {
+    //   message: "User logged in successfully",
+    //   data: { token: accessToken, refreshToken, user },
+    // };
   };
   static refreshToken = async ({ refreshToken }) => {
     const credential = await Credential.findOne({ refreshToken });
@@ -223,14 +218,13 @@ class AuthService {
       throw new NotFoundError("User does not exist");
     }
 
-    const credential = await Credential.findOne({ user: user._id });
+    const credential = await CredentialService.findByUserId(user._id);
 
     credential.emailVerificationCode = code;
     credential.emailVerificationCodeExpires = expires;
     await credential.save();
     const result = await sendVerificationEmail(email, code);
   };
-
   static resetPassword = async ({ email, newPassword }) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     const credential = await Credential.findOne({ user: user._id });
@@ -246,7 +240,7 @@ class AuthService {
   };
   static changePassword = async ({ userId, currentPassword, newPassword }) => {
     const user = await User.findById(userId);
-    const credential = await Credential.findOne({ user: user._id });
+    const credential = await CredentialService.findByUserId(user._id);
 
     const isMatch = await AuthUtils.comparePasswords(
       currentPassword,
@@ -267,6 +261,23 @@ class AuthService {
     }
 
     return user;
+  };
+
+  static logout = async (userCredential) => {
+    const credential = await CredentialService.findById(userCredential._id);
+
+    if (!credential) {
+      throw new BadRequestError("Credential does not exist");
+    }
+
+    //instead of remove credentail (stuck with password) so I refresh data
+    credential.refreshTokensUsed = [];
+    credential.refreshToken = null;
+    credential.accessToken = null;
+    credential.publicKey = null;
+    credential.privateKey = null;
+
+    await credential.save();
   };
 }
 

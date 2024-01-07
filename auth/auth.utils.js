@@ -1,13 +1,16 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const { BadRequestError } = require("../classes/error/ErrorResponse");
+const errorHandler = require("../middleware/errorHandler");
+const {
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+} = require("../classes/error/ErrorResponse");
+const CredentialService = require("../services/credential.service");
 const ApiKeyService = require("../services/apikey.service");
+const { HEADER } = require("../const");
 
-const HEADER = {
-  API_KEY: "x-api-key",
-  AUTHORIZATION: "authorization",
-};
 class AuthUtils {
   static generateTokenPair = async (payload, publicKey, privateKey) => {
     const accessToken = await jwt.sign(payload, privateKey, {
@@ -88,6 +91,28 @@ class AuthUtils {
       return next();
     };
   };
+
+  static verifyAuthentication = errorHandler(async (req, res, next) => {
+    const userId = req.headers[HEADER.CLIENT_ID];
+    if (!userId) throw new UnauthorizedError("Invalid Request");
+    const credential = await CredentialService.findByUserId(userId);
+    if (!credential) throw new NotFoundError("Not Found Credential");
+    const accessToken = req.headers[HEADER.AUTHORIZATION];
+    if (!accessToken) throw new UnauthorizedError("Invalid Request");
+
+    try {
+      const decodedUser = jwt.verify(accessToken, credential.publicKey);
+      if (userId != decodedUser.userId) {
+        throw new UnauthorizedError("Invalid Request");
+      }
+      //?
+      req.credential = credential;
+      req.userId = userId;
+      return next();
+    } catch (error) {
+      throw error;
+    }
+  });
 }
 
 module.exports = AuthUtils;
