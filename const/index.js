@@ -1,7 +1,7 @@
 const HEADER = {
   API_KEY: "x-api-key",
-  CLIENT_ID: "userId",
-  AUTHORIZATION: "Authorization",
+  CLIENT_ID: "user-id",
+  AUTHORIZATION: "authorization",
 };
 
 module.exports = {

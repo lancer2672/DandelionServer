@@ -6,12 +6,14 @@ const {
   UnauthorizedError,
   NotFoundError,
   InternalServerError,
+  ForbiddenError,
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const { OAuth2Client } = require("google-auth-library");
 const { sendVerificationEmail } = require("../mailer");
 const CredentialService = require("./credential.service");
 const AuthUtils = require("../auth/auth.utils");
+const UserService = require("./user.service");
 class AuthService {
   static register = async ({
     password,
@@ -42,14 +44,9 @@ class AuthService {
     });
 
     await newUser.save();
-
-    const { privateKey, publicKey } = AuthUtils.generateKeyPair();
-
     await CredentialService.createCredential({
       user: newUser,
       password: passwordHash,
-      publicKey,
-      privateKey,
     });
 
     return newUser;
@@ -74,19 +71,19 @@ class AuthService {
     }
     if (compareRes) {
       const { privateKey, publicKey } = AuthUtils.generateKeyPair();
-      const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
+      const { accessToken, refreshToken } = AuthUtils.generateTokenPair(
         { userId: existUser._id },
-        publicKey,
         privateKey
       );
       await CredentialService.updateCredential({
         credential: existCredential,
-        accessToken,
-        refreshToken,
-        publicKey,
-        privateKey,
+        updates: {
+          accessToken,
+          refreshToken,
+          publicKey,
+          privateKey,
+        },
       });
-
       return {
         token: accessToken,
         refreshToken: refreshToken,
@@ -126,9 +123,8 @@ class AuthService {
     //     privateKey,
     //   });
     // }
-    // const { accessToken, refreshToken } = await AuthUtils.generateTokenPair(
+    // const { accessToken, refreshToken } =  AuthUtils.generateTokenPair(
     //   { userId: user._id },
-    //   publicKey,
     //   privateKey
     // );
     // await CredentialService.updateCredential({
@@ -148,46 +144,63 @@ class AuthService {
     //   data: { token: accessToken, refreshToken, user },
     // };
   };
-  static refreshToken = async ({ refreshToken }) => {
-    const credential = await Credential.findOne({ refreshToken });
+  static refreshToken = async (refreshToken) => {
+    console.log("refreshToken", refreshToken);
+    const credentialWithUsedRefreshToken =
+      await CredentialService.findByRefreshTokenUsed(refreshToken);
+    //check if refreshToken used
+    console.log(
+      "credentialWithUsedRefreshToken",
+      credentialWithUsedRefreshToken
+    );
+
+    if (credentialWithUsedRefreshToken) {
+      const { privateKey, accessToken } = credentialWithUsedRefreshToken;
+      const { userId } = AuthUtils.verifyJWT(refreshToken, privateKey);
+      console.log("refreshToken: ", { userId });
+      await CredentialService.refreshCredentials(
+        credentialWithUsedRefreshToken
+      );
+      throw new ForbiddenError("Something wrong !! Relogin");
+    }
+
+    const holderToken = await CredentialService.findByRefreshToken(
+      refreshToken
+    );
+    console.log("Holder", holderToken, refreshToken);
+    if (!holderToken) throw new UnauthorizedError();
+
+    const { userId } = AuthUtils.verifyJWT(
+      refreshToken,
+      holderToken.privateKey
+    );
+    const foundUser = UserService.findById(userId);
+    if (!foundUser) throw new UnauthorizedError();
+    //create new token pair
+    const newTokens = AuthUtils.generateTokenPair(
+      { userId },
+      holderToken.privateKey
+    );
+
+    await CredentialService.updateCredential({
+      credential: holderToken,
+      updates: {
+        refreshTokensUsed: [...holderToken.refreshTokensUsed, refreshToken],
+        refreshToken: newTokens.refreshToken,
+        accessToken: newTokens.accessToken,
+      },
+    });
+
     if (!refreshToken) {
       throw new UnauthorizedError();
     }
-
-    return new Promise((resolve, reject) => {
-      jwt.verify(
-        refreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
-        async (err, decoded) => {
-          if (err) {
-            if (err.name === "TokenExpiredError") {
-              credential.refreshToken = null;
-              credential.refreshTokensUsed.push(refreshToken);
-              await credential.save();
-              reject(new Error("Token expired"));
-            } else {
-              reject(new Error("Forbidden"));
-            }
-          }
-          const userId = decoded.userId;
-          const { accessToken } = await AuthUtils.generateTokenPair(
-            { userId },
-            credential.publicKey,
-            credential.privateKey
-          );
-          credential.accessToken = accessToken;
-
-          await credential.save();
-
-          resolve(accessToken);
-        }
-      );
-    });
+    return {
+      refreshToken: newTokens.refreshToken,
+      accessToken: newTokens.accessToken,
+    };
   };
   static verifyEmail = async ({ code, password }) => {
-    const credential = await Credential.findOne({
-      emailVerificationCode: code,
-    });
+    const credential = await CredentialService.findByVerificationCode(code);
     if (!credential) {
       throw new BadRequestError("Invalid verification code");
     }
@@ -195,12 +208,14 @@ class AuthService {
     if (credential.emailVerificationCodeExpires < new Date()) {
       throw new BadRequestError("Verification code has expired");
     }
-
-    credential.emailVerified = true;
-    credential.emailVerificationCode = null;
-    credential.emailVerificationCodeExpires = null;
-
-    await credential.save();
+    await CredentialService.updateCredential({
+      credential,
+      updates: {
+        emailVerificationCode: null,
+        emailVerified: true,
+        emailVerificationCodeExpires: null,
+      },
+    });
   };
   static sendEmailVerification = async ({ email }) => {
     if (!email) {
@@ -219,23 +234,30 @@ class AuthService {
     }
 
     const credential = await CredentialService.findByUserId(user._id);
+    await CredentialService.updateCredential({
+      credential,
+      updates: {
+        emailVerificationCode: code,
+        emailVerified: true,
+        emailVerificationCodeExpires: expires,
+      },
+    });
 
-    credential.emailVerificationCode = code;
-    credential.emailVerificationCodeExpires = expires;
-    await credential.save();
     const result = await sendVerificationEmail(email, code);
   };
   static resetPassword = async ({ email, newPassword }) => {
     const user = await User.findOne({ email: email.toLowerCase() });
-    const credential = await Credential.findOne({ user: user._id });
+    const credential = await CredentialService.findByUserId(user._id);
 
     const passwordHash = await AuthUtils.hashPassword(newPassword);
     credential.password = passwordHash;
-    try {
-      await credential.save();
-    } catch (err) {
-      throw new InternalServerError("Update password failed");
-    }
+    await CredentialService.updateCredential({
+      credential,
+      updates: {
+        password: passwordHash,
+      },
+    });
+
     return user;
   };
   static changePassword = async ({ userId, currentPassword, newPassword }) => {
@@ -254,30 +276,18 @@ class AuthService {
     const passwordHash = await AuthUtils.hashPassword(newPassword);
     credential.password = passwordHash;
 
-    try {
-      await credential.save();
-    } catch (err) {
-      throw new InternalServerError("Update password failed");
-    }
+    await CredentialService.updateCredential({
+      credential,
+      updates: {
+        password: passwordHash,
+      },
+    });
 
     return user;
   };
 
   static logout = async (userCredential) => {
-    const credential = await CredentialService.findById(userCredential._id);
-
-    if (!credential) {
-      throw new BadRequestError("Credential does not exist");
-    }
-
-    //instead of remove credentail (stuck with password) so I refresh data
-    credential.refreshTokensUsed = [];
-    credential.refreshToken = null;
-    credential.accessToken = null;
-    credential.publicKey = null;
-    credential.privateKey = null;
-
-    await credential.save();
+    CredentialService.refreshCredentials(userCredential);
   };
 }
 

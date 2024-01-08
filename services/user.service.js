@@ -10,6 +10,9 @@ const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const S3ClientIns = require("../s3Client");
 
 class UserService {
+  static findById = async (userId) => {
+    return await User.findById(userId);
+  };
   static async updateUser(userId, userToUpdate) {
     const user = await User.findById(userId);
     if (!user) {

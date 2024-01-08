@@ -59,10 +59,12 @@ exports.refreshToken = async (req, res) => {
     throw new BadRequestError("Invalid information");
   }
 
-  const newAccessToken = await AuthService.refreshToken(req.body);
+  const { refreshToken, accessToken } = await AuthService.refreshToken(
+    req.body.refreshToken
+  );
   new OK({
     message: "success",
-    data: { accessToken: newAccessToken },
+    data: { refreshToken, accessToken },
   }).send(res);
 };
 
@@ -100,6 +102,7 @@ exports.resetPassword = async (req, res) => {
 };
 exports.logout = async (req, res) => {
   await AuthService.logout(req.credential);
+
   new OK({
     message: "Logout successfully",
     data: {},
