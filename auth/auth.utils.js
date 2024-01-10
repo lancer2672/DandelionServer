@@ -9,7 +9,7 @@ const {
 } = require("../classes/error/ErrorResponse");
 const CredentialService = require("../services/credential.service");
 const ApiKeyService = require("../services/apikey.service");
-const { HEADER } = require("../const");
+const { HEADER } = require("../constant");
 
 class AuthUtils {
   static generateTokenPair = (payload, privateKey) => {
