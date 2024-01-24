@@ -1,5 +1,4 @@
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken");
 const FriendRequestController = require("../controllers/friendrequest.controller");
 const errorHandler = require("../middleware/errorHandler");
 
@@ -24,7 +23,6 @@ const router = express.Router();
  */
 router.get(
   "/requests",
-  verifyToken,
   errorHandler(FriendRequestController.getFriendRequests)
 );
 
@@ -48,7 +46,6 @@ router.get(
  */
 router.get(
   "/check-status/:receiverId",
-  verifyToken,
   errorHandler(FriendRequestController.checkFriendStatus)
 );
 

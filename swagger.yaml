@@ -265,26 +265,6 @@ paths:
       responses:
         '200':
           description: Post by ID retrieved successfully
-  /post/comment/:id:
-    delete:
-      tags:
-        - Post
-      responses:
-        '200':
-          description: Comment deleted successfully
-    put:
-      tags:
-        - Post
-      responses:
-        '200':
-          description: Comment posted successfully
-  /post/react/:id:
-    put:
-      tags:
-        - Post
-      responses:
-        '200':
-          description: Post reacted successfully
   /post/:id:
     put:
       tags:

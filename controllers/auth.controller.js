@@ -59,9 +59,11 @@ exports.refreshToken = async (req, res) => {
     throw new BadRequestError("Invalid information");
   }
 
-  const { refreshToken, accessToken } = await AuthService.refreshToken(
-    req.body.refreshToken
-  );
+  const { refreshToken, accessToken } = await AuthService.refreshToken({
+    credential: req.credential,
+    refreshToken: req.refreshToken,
+    userId: req.userId,
+  });
   new OK({
     message: "success",
     data: { refreshToken, accessToken },

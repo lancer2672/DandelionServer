@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const ChatController = require("../controllers/chat.controller");
-const verifyToken = require("../middleware/verifyToken");
 const { body } = require("express-validator");
 const errorHandler = require("../middleware/errorHandler");
 
@@ -22,7 +21,7 @@ const errorHandler = require("../middleware/errorHandler");
  *       200:
  *         description: Chat channels retrieved successfully
  */
-router.get("/channels", verifyToken, errorHandler(ChatController.getChannels));
+router.get("/channels", errorHandler(ChatController.getChannels));
 
 /**
  * @swagger
@@ -44,7 +43,6 @@ router.get("/channels", verifyToken, errorHandler(ChatController.getChannels));
  */
 router.get(
   "/member/:channelId",
-  verifyToken,
   errorHandler(ChatController.GetChannelMember)
 );
 
@@ -68,7 +66,6 @@ router.get(
  */
 router.get(
   "/last-message/:channelId",
-  verifyToken,
   errorHandler(ChatController.getLastMessage)
 );
 
@@ -111,7 +108,6 @@ router.get(
 
 router.get(
   "/messages/:channelId",
-  verifyToken,
   errorHandler(ChatController.getChannelMessages)
 );
 
@@ -142,7 +138,6 @@ router.get(
 router.post(
   "/channel/find",
   body("memberIds").exists().withMessage("MemberIds is missing"),
-  verifyToken,
   errorHandler(ChatController.findOrCreateChannel)
 );
 

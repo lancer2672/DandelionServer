@@ -7,15 +7,17 @@ const chatRoutes = require("./chat.route");
 const uploadRoutes = require("./upload.route");
 const friendRequestRoutes = require("./friendrequest.route");
 const notificationRoutes = require("./notification.route");
-const AuthUtils = require("../auth/auth.utils");
+const checkApiKey = require("../middleware/checkApiKey");
+const checkPermission = require("../middleware/checkPermission");
 
 //check api key
-router.use(AuthUtils.checkApiKey);
+router.use(checkApiKey);
 
 //default permssion
-router.use(AuthUtils.permission("0"));
+router.use(checkPermission('0'));
 
 router.use("/api/auth", authRoutes);
+
 router.use("/post", postRoutes);
 router.use("/user", userRoutes);
 router.use("/chat", chatRoutes);

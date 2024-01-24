@@ -127,6 +127,8 @@ const handleIncomingMessage = async function (data) {
   }
 };
 
+
+//join all channels 
 const handleLogin = async (userId) => {
   try {
     const chatChannels = await ChatChannel.find({ usersId: { $in: [userId] } });
