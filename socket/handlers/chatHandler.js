@@ -9,20 +9,22 @@ const {
 } = require("../../services/notification.service");
 const MessageFactory = require("../../factory/MessageFactory");
 const { MessageType } = require("../../constant");
+const ChannelRepository = require("../../models/repositories/channel.repo");
+const UserRepository = require("../../models/repositories/user.repo");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
   socketIO.to(channelId).emit("receive-message", { newMess, channelId, type });
 };
 const getChannelMembers = async (userId, channelId) => {
-  const channel = await Channel.findById(channelId);
+  const channel = await ChannelRepository.findChannels({ query: { _id: channelId } });
   const receiverId = channel.memberIds.find((memberId) => memberId != userId);
-  const receiver = await User.findById(receiverId);
-  const sender = await User.findById(userId);
+  const receiver = await UserRepository.findUsers({ query: { _id: receiverId } });
+  const sender = await UserRepository.findUsers({ query: { _id: userId } });
   return { receiver, sender };
 };
 const sendNotification = async ({ receiver, sender, channelId, message }) => {
-  const channel = await Channel.findById(channelId);
+  const channel = await ChannelRepository.findChannels({ query: { _id: channelId } });
   console.log("SENDER", receiver.FCMtoken);
 
   const notificationData = {
@@ -58,10 +60,7 @@ const createMessage = async function (data) {
 
   const newMessage = await MessageFactory.createMessage(type, data);
 
-  const chatChannel = await Channel.findById(channelId);
-  chatChannel.lastUpdate = new Date();
-  await chatChannel.save();
-
+  await ChannelRepository.updateChannel(channelId, { lastUpdate: new Date() });
   return newMessage;
 };
 
@@ -127,9 +126,11 @@ const handleIncomingMessage = async function (data) {
   }
 };
 
+
+//join all channels 
 const handleLogin = async (userId) => {
   try {
-    const chatChannels = await ChatChannel.find({ usersId: { $in: [userId] } });
+    const chatChannels = await ChannelRepository.findChannels({ query: { usersId: { $in: [userId] } } });
     this.emit("get-channels", chatChannels);
   } catch (er) {
     console.log(er);
@@ -138,27 +139,19 @@ const handleLogin = async (userId) => {
 
 const handleUserOffline = async (userId) => {
   try {
-    const user = await User.findById(userId);
-    if (user) {
-      user.lastOnline = new Date();
-      user.isOnline = 0;
-    }
-    await user.save();
+    await UserRepository.updateUser({ query: { _id: userId }, updateData: { lastOnline: new Date(), isOnline: 0 } });
   } catch (er) {
     console.log(er);
   }
 };
 const handleUserOnline = async (userId) => {
   try {
-    const user = await User.findById(userId);
-    if (user) {
-      user.isOnline = 1;
-    }
-    await user.save();
+    await UserRepository.updateUser({ query: { _id: userId }, updateData: { isOnline: 1 } });
   } catch (er) {
     console.log(er);
   }
 };
+
 module.exports = {
   handleJoinChannels,
   handleJoinChannel,

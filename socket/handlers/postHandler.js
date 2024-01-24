@@ -103,7 +103,7 @@ const handleReactPost = async function (data) {
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId).select("-password");
     const reactUser = await User.findById(reactUserId);
-
+    
     let userIndex = post.likes.findIndex((item) => item.userId == reactUserId);
 
     if (addToList) {

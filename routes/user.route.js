@@ -1,5 +1,4 @@
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken");
 const UserController = require("../controllers/user.controller");
 const errorHandler = require("../middleware/errorHandler");
 
@@ -21,7 +20,7 @@ const router = express.Router();
  */
 router.get(
   "/friend/get-all",
-  verifyToken,
+  
   errorHandler(UserController.getAllFriends)
 );
 
@@ -36,7 +35,7 @@ router.get(
  */
 router.get(
   "/search-history/recent",
-  verifyToken,
+  
   errorHandler(UserController.getRecentSearchHistory)
 );
 
@@ -49,7 +48,7 @@ router.get(
  *       200:
  *         description: Search completed successfully
  */
-router.get("/search", verifyToken, errorHandler(UserController.searchUsers));
+router.get("/search",  errorHandler(UserController.searchUsers));
 
 /**
  * @swagger
@@ -67,7 +66,7 @@ router.get("/search", verifyToken, errorHandler(UserController.searchUsers));
  *       200:
  *         description: User retrieved successfully
  */
-router.get("/:id", verifyToken, errorHandler(UserController.getUserById));
+router.get("/:id",  errorHandler(UserController.getUserById));
 
 /**
  * @swagger
@@ -80,7 +79,7 @@ router.get("/:id", verifyToken, errorHandler(UserController.getUserById));
  */
 router.put(
   "/save-token",
-  verifyToken,
+  
   errorHandler(UserController.saveFCMtoken)
 );
 
@@ -93,7 +92,7 @@ router.put(
  *       200:
  *         description: User updated successfully
  */
-router.put("/update", verifyToken, errorHandler(UserController.updateUser));
+router.put("/update",  errorHandler(UserController.updateUser));
 
 /**
  * @swagger
@@ -106,7 +105,7 @@ router.put("/update", verifyToken, errorHandler(UserController.updateUser));
  */
 router.post(
   "/search-history/add",
-  verifyToken,
+  
   errorHandler(UserController.addUserToSearchHistory)
 );
 
@@ -128,7 +127,7 @@ router.post(
  */
 router.delete(
   "/search-history/remove/:userId",
-  verifyToken,
+  
   errorHandler(UserController.removeUserFromSearchHistory)
 );
 

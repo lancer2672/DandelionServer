@@ -73,6 +73,7 @@ class AuthService {
       const { privateKey, publicKey } = AuthUtils.generateKeyPair();
       const { accessToken, refreshToken } = AuthUtils.generateTokenPair(
         { userId: existUser._id },
+        publicKey,
         privateKey
       );
       await CredentialService.updateCredential({
@@ -125,6 +126,7 @@ class AuthService {
     // }
     // const { accessToken, refreshToken } =  AuthUtils.generateTokenPair(
     //   { userId: user._id },
+    //    publicKey,
     //   privateKey
     // );
     // await CredentialService.updateCredential({
@@ -144,56 +146,35 @@ class AuthService {
     //   data: { token: accessToken, refreshToken, user },
     // };
   };
-  static refreshToken = async (refreshToken) => {
+  static refreshToken = async ({ credential, userId, refreshToken }) => {
     console.log("refreshToken", refreshToken);
-    const credentialWithUsedRefreshToken =
-      await CredentialService.findByRefreshTokenUsed(refreshToken);
-    //check if refreshToken used
-    console.log(
-      "credentialWithUsedRefreshToken",
-      credentialWithUsedRefreshToken
-    );
-
-    if (credentialWithUsedRefreshToken) {
-      const { privateKey, accessToken } = credentialWithUsedRefreshToken;
-      const { userId } = AuthUtils.verifyJWT(refreshToken, privateKey);
-      console.log("refreshToken: ", { userId });
+    if (credential.refreshTokensUsed.includes(refreshToken)) {
       await CredentialService.refreshCredentials(
         credentialWithUsedRefreshToken
       );
       throw new ForbiddenError("Something wrong !! Relogin");
     }
 
-    const holderToken = await CredentialService.findByRefreshToken(
-      refreshToken
-    );
-    console.log("Holder", holderToken, refreshToken);
-    if (!holderToken) throw new UnauthorizedError();
+    if (credential.refreshToken != refreshToken) throw new UnauthorizedError();
 
-    const { userId } = AuthUtils.verifyJWT(
-      refreshToken,
-      holderToken.privateKey
-    );
     const foundUser = UserService.findById(userId);
     if (!foundUser) throw new UnauthorizedError();
     //create new token pair
     const newTokens = AuthUtils.generateTokenPair(
       { userId },
-      holderToken.privateKey
+      credential.publicKey,
+      credential.privateKey
     );
 
     await CredentialService.updateCredential({
-      credential: holderToken,
+      credential,
       updates: {
-        refreshTokensUsed: [...holderToken.refreshTokensUsed, refreshToken],
+        refreshTokensUsed: [...credential.refreshTokensUsed, refreshToken],
         refreshToken: newTokens.refreshToken,
         accessToken: newTokens.accessToken,
       },
     });
 
-    if (!refreshToken) {
-      throw new UnauthorizedError();
-    }
     return {
       refreshToken: newTokens.refreshToken,
       accessToken: newTokens.accessToken,

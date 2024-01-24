@@ -1,5 +1,4 @@
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken");
 const NotificationController = require("../controllers/notification.controller");
 const errorHandler = require("../middleware/errorHandler");
 
@@ -24,7 +23,6 @@ const router = express.Router();
  */
 router.get(
   "/",
-  verifyToken,
   errorHandler(NotificationController.getAllNotifications)
 );
 
@@ -48,7 +46,6 @@ router.get(
  */
 router.delete(
   "/:notificationId",
-  verifyToken,
   errorHandler(NotificationController.deleteNotification)
 );
 

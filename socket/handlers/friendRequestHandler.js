@@ -7,30 +7,13 @@ const {
 } = require("../../services/notification.service");
 
 const Global = require("../global");
+const ChannelRepository = require("../../models/repositories/channel.repo");
+const UserRepository = require("../../models/repositories/user.repo");
+const { FriendRequestStatus } = require("../../constant");
 
-const findOrCreateChannel = async (channelName, memberIds) => {
-  try {
-    let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
-    if (!channel) {
-      channel = new Channel({
-        channelName,
-        memberIds,
-        channelMessages: [],
-      });
-      await channel.save();
-      console.log("Channel created successfully!");
-    } else {
-      channel.isInWaitingList = true;
-      await channel.save();
-    }
-    return channel;
-  } catch (err) {
-    console.error("Error finding or creating channel", err);
-  }
-};
 const addFriendToFriendList = async (userIdA, userIdB) => {
   try {
-    const userA = await User.findById(userIdA);
+    const userA = await UserRepository.findOne({ _id: userIdA });
     console.log("userA", userA);
     const checkIfFriend = userA.friends.some(
       (friend) => friend.userId.toString() === userIdB.toString()
@@ -40,7 +23,7 @@ const addFriendToFriendList = async (userIdA, userIdB) => {
         userId: userIdB,
         createdAt: new Date().toISOString(),
       });
-      await userA.save();
+      await UserRepository.update({ _id: userIdA }, userA);
     }
   } catch (er) {
     console.log(er);
@@ -50,25 +33,23 @@ const findExistedPendingFriendRequest = async (senderId, receiverId) => {
   return await FriendRequestModel.findOne({
     sender: senderId,
     receiver: receiverId,
-    status: "pending",
+    status: FriendRequestStatus.PENDING,
   });
 };
 const acceptFriendRequest = async (request) => {
   try {
-    request.status = "accepted";
-    await request.save();
-    const channel = await findOrCreateChannel("New Chat Room", [
+    await FriendRequestRepository.updateFriendRequestStatus(request, "accepted");
+    const channel = await ChannelRepository.findOrCreateChannel("New Chat Room", [
       request.sender,
       request.receiver,
     ]);
     channel.isInWaitingList = false;
-    await channel.save();
+    await ChannelRepository.updateChannel(channel._id, channel);
     return channel;
   } catch (er) {
     console.log(er);
   }
 };
-
 const handleAcceptFriendRequest = async (request) => {
   const socketIO = Global.socketIO;
   const onlineUsers = Global.onlineUsers;
@@ -76,21 +57,21 @@ const handleAcceptFriendRequest = async (request) => {
   const receiverSocketId = onlineUsers[request.receiver.toString()]?.socketId;
   const newChannel = await acceptFriendRequest(request);
 
-  socketIO.to(senderSocketId).emit("new-notification");
-  socketIO.to(receiverSocketId).emit("Hello");
-
   socketIO.to(senderSocketId).emit("new-channel", newChannel);
   socketIO.to(receiverSocketId).emit("new-channel", newChannel);
 
   const responseData = {
     requestId: request._id,
-    responseValue: "accept",
+    responseValue: FriendRequestStatus.ACCEPT,
     userIds: [request.sender, request.receiver],
   };
   socketIO.to(senderSocketId).emit("response-friendRequest", responseData);
   socketIO.to(receiverSocketId).emit("response-friendRequest", responseData);
-  console.log("newChannel Sent");
 };
+
+
+
+
 const unFriend = async (data) => {
   const { userId, friendId } = data;
   const socketIO = Global.socketIO;
@@ -100,8 +81,8 @@ const unFriend = async (data) => {
   console.log({ userId, friendId, userSocketId, friendSocketId });
 
   try {
-    const user = await User.findById(userId);
-    const friend = await User.findById(friendId);
+    const user = await UserRepository.findById(userId );
+    const friend = await UserRepository.findById(friendId);
     if (!user || !friend) {
       console.log("friend or user not exist");
     }
@@ -109,21 +90,21 @@ const unFriend = async (data) => {
     user.friends = user.friends.filter(
       (friend) => friend.userId.toString() !== friendId
     );
-    await user.save();
+    await UserRepository.update({ _id: userId }, user);
 
     // Remove user from friend's friends list
     friend.friends = friend.friends.filter(
       (friend) => friend.userId.toString() !== userId
     );
-    await friend.save();
+    await UserRepository.update({ _id: friendId }, friend);
 
     // Find the channel between the two users and set isInWaitingList to true
-    const channel = await Channel.findOne({
+    const channel = await ChannelRepository.findOneChannel({
       memberIds: { $all: [userId, friendId] },
     });
     if (channel) {
       channel.isInWaitingList = true;
-      await channel.save();
+      await ChannelRepository.updateChannel(channel._id, channel);
     }
     socketIO.to(userSocketId).emit("unfriend", friendId);
     socketIO.to(friendSocketId).emit("unfriend", userId);
@@ -139,8 +120,10 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
   const senderSocketId = onlineUsers[senderId]?.socketId;
   const receiverSocketId = onlineUsers[receiverId]?.socketId;
   try {
-    const sender = await User.findById(senderId);
-    const receiver = await User.findById(receiverId);
+
+    const sender = await UserRepository.findById(senderId );
+    const receiver = await UserRepository.findById(receiverId);
+
     const isAlreadyFriend = sender.friends.some(
       (friend) => friend.userId == receiverId
     );
@@ -178,7 +161,7 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       const newRequest = new FriendRequestModel({
         sender: senderId,
         receiver: receiverId,
-        status: "pending",
+        status: FriendRequestStatus.PENDING,
       });
       await newRequest.save();
       socketIO.to(senderSocketId).emit("send-friendRequest", "sentRequest");
@@ -206,35 +189,26 @@ const handleResponseRequest = async ({ requestId, responseValue }) => {
   const socketIO = Global.socketIO;
   const onlineUsers = Global.onlineUsers;
   try {
-    const request = await FriendRequestModel.findById(requestId);
-    const sender = await User.findById(request.sender);
+    const request = await FriendRequestRepository.findExistingRequest(requestId, responseValue);
+    const sender = await UserRepository.findOne({ _id: request.sender });
     const senderSocketId = onlineUsers[request.sender.toString()]?.socketId;
     const receiverSocketId = onlineUsers[request.receiver.toString()]?.socketId;
-    const receiver = await User.findById(request.receiver);
+    const receiver =  await UserRepository.findOne({ _id: request.receiver });
     if (!request) {
       console.log("Friend request not found");
       return;
     }
-    if (responseValue === "accept") {
-      await handleAcceptFriendRequest(request);
+    if (responseValue === FriendRequestStatus.ACCEPT) {
+      await FriendRequestRepository.updateFriendRequestStatus(request, "accepted");
       await addFriendToFriendList(sender._id, receiver._id);
       await addFriendToFriendList(receiver._id, sender._id);
       console.log("Friend request accepted");
-
-      // await NotificationService.sendNotification({
-      //   tokens: [sender.FCMtoken],
-      //   messageData: {
-      //     message: `${receiver.nickname} accepeted your friend request`,
-      //   },
-      //   type: NotificationType.FRIEND_REQUEST,
-      // });
-    } else if (responseValue === "decline") {
-      request.status = "declined";
-      await request.save();
+    } else if (responseValue === FriendRequestStatus.DECLINE) {
+      await FriendRequestRepository.updateFriendRequestStatus(request, "declined");
 
       const responseData = {
         requestId: request._id,
-        responseValue: "decline",
+        responseValue: FriendRequestStatus.DECLINE,
       };
       socketIO.to(senderSocketId).emit("response-friendRequest", responseData);
       socketIO

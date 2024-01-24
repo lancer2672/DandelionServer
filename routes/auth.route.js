@@ -1,8 +1,7 @@
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken");
 const AuthController = require("../controllers/auth.controller");
 const errorHandler = require("../middleware/errorHandler");
-const AuthUtils = require("../auth/auth.utils");
+const verifyAuthentication = require("../middleware/verifyAuthentication");
 
 const router = express.Router();
 
@@ -102,8 +101,8 @@ router.get(
  *       200:
  *         description: Logout successful
  */
-router.use(AuthUtils.verifyAuthentication);
-router.post("/logout", verifyToken, errorHandler(AuthController.logout));
+router.use(verifyAuthentication);
+router.post("/logout", errorHandler(AuthController.logout));
 
 /**
  * @swagger
@@ -116,7 +115,6 @@ router.post("/logout", verifyToken, errorHandler(AuthController.logout));
  */
 router.put(
   "/change-password",
-  verifyToken,
   errorHandler(AuthController.changePassword)
 );
 
@@ -131,7 +129,6 @@ router.put(
  */
 router.post(
   "/google",
-  verifyToken,
   errorHandler(AuthController.loginWithGoogle)
 );
 /**
@@ -145,7 +142,6 @@ router.post(
  */
 router.post(
   "/refresh-token",
-  verifyToken,
   errorHandler(AuthController.refreshToken)
 );
 
@@ -160,7 +156,6 @@ router.post(
  */
 router.put(
   "/reset-password",
-  verifyToken,
   errorHandler(AuthController.resetPassword)
 );
 

@@ -57,54 +57,10 @@ exports.getPostById = async (req, res) => {
   }
 };
 
-exports.handleReactPost = async (req, res) => {
-  try {
-    await PostService.handleReactPost(req.userId, req.params.id);
-    new OK({
-      message: "React success",
-      data: {},
-    }).send(res);
-  } catch (err) {
-    throw new InternalServerError();
-  }
-};
-
-exports.handleDeleteComment = async (req, res) => {
-  const updatedComments = await PostService.handleDeleteComment(
-    req.params.id,
-    req.body.commentId
-  );
-  new OK({
-    message: "Success",
-    data: { updatedComments },
-  }).send(res);
-};
-
-exports.handleCommentPost = async (req, res) => {
-  const newComment = {
-    content: req.body.content,
-    userId: req.userId,
-  };
-  const updatedPost = await PostService.handleCommentPost(
-    req.params.id,
-    newComment
-  );
-  new OK({
-    message: "Success",
-    data: { updatedPost },
-  }).send(res);
-};
 
 exports.handleUpdatePost = async (req, res) => {
-  const { description, image } = req.body;
-  let updatedPost = {};
-  if (description) {
-    updatedPost.description = description;
-  }
-  if (image) {
-    updatedPost.image = image;
-  }
-  const post = await PostService.handleUpdatePost(req.params.id, updatedPost);
+  const {id} = req.params
+  const post = await PostService.handleUpdatePost({id,payload:req.body});
   new OK({
     message: "Success",
     data: { updatedPost: post },
@@ -120,15 +76,8 @@ exports.handleDeletePost = async (req, res) => {
 };
 
 exports.handleCreatePost = async (req, res) => {
-  const { description, image } = req.body;
-  const newPostData = {
-    description: description || " ",
-    user: req.userId,
-    comments: [],
-    likes: [],
-    image,
-  };
-  const savedPost = await PostService.handleCreatePost(newPostData);
+ 
+  const savedPost = await PostService.handleCreatePost({userId:req.userId,payload:req.body});
   new OK({
     message: "Success",
     data: { newPost: savedPost },

@@ -66,8 +66,16 @@ class PostService {
     return post;
   }
 
-  static async handleUpdatePost(postId, updatedPost) {
-    let post = await Post.findOneAndUpdate({ _id: postId }, updatedPost, {
+  static async handleUpdatePost({id, payload}) {
+    const updatedPost = {}
+    const { description, image } = payload;
+    if (description) {
+      updatedPost.description = description;
+    }
+    if (image) {
+      updatedPost.image = image;
+    }
+    let post = await Post.findByIdAndUpdate(id,updatedPost , {
       new: true,
     });
     if (!post) {
@@ -84,8 +92,14 @@ class PostService {
     await Post.deleteOne({ _id: postId });
   }
 
-  static async handleCreatePost(newPostData) {
-    const newPost = new Post(newPostData);
+  static async handleCreatePost({userId, payload}) {
+    const { description, image } = payload;
+    const postData = {
+      description: description || " ",
+      user: userId,
+      image,
+    };
+    const newPost = new Post(postData);
     const savedPost = await newPost.save();
     return savedPost;
   }

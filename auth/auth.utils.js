@@ -12,8 +12,8 @@ const ApiKeyService = require("../services/apikey.service");
 const { HEADER } = require("../constant");
 
 class AuthUtils {
-  static generateTokenPair = (payload, privateKey) => {
-    const accessToken = jwt.sign(payload, privateKey, {
+  static generateTokenPair = (payload,publicKey,privateKey) => {
+    const accessToken = jwt.sign(payload, publicKey, {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     });
 
@@ -27,8 +27,8 @@ class AuthUtils {
     };
   };
 
-  static verifyJWT = (accessToken, privateKey) => {
-    return jwt.verify(accessToken, privateKey);
+  static verifyJWT = (accessToken, publicKey) => {
+    return jwt.verify(accessToken, publicKey);
   };
   static generateVerificationCode = () => {
     return Math.floor(Math.random() * 900000) + 100000;
@@ -95,11 +95,29 @@ class AuthUtils {
     const credential = await CredentialService.findByUserId(userId);
     if (!credential) throw new NotFoundError("Not Found Credential");
 
+    if (req.headers[HEADER.REFRESH_TOKEN]) {
+      try {
+        const refreshToken = req.headers[HEADER.REFRESH_TOKEN];
+        const decodedUser = jwt.verify(refreshToken, credential.privateKey);
+
+        if (userId != decodedUser.userId) {
+          throw new UnauthorizedError("Invalid Request");
+        }
+        //?
+        req.credential = credential;
+        req.userId = userId;
+        req.refreshToken = refreshToken;
+        return next();
+      } catch (error) {
+        throw error;
+      }
+    }
+
     const accessToken = req.headers[HEADER.AUTHORIZATION];
     if (!accessToken) throw new UnauthorizedError("Invalid Request");
 
     try {
-      const decodedUser = jwt.verify(accessToken, credential.privateKey);
+      const decodedUser = jwt.verify(accessToken, credential.publicKey);
 
       if (userId != decodedUser.userId) {
         throw new UnauthorizedError("Invalid Request");

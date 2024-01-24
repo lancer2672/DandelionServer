@@ -1,28 +1,21 @@
 const { BadRequestError } = require("../classes/error/ErrorResponse");
 const { MessageType } = require("../constant");
 const {
-  CallMessageSchema,
-  TextMessageSchema,
-  ImageMessageSchema,
-  VideoMessageSchema,
   Message,
 } = require("../models/message.model");
 
 class MessageFactory {
+  // key - class
+  static messageRegistry = {};
+  static registryMessageType = (type, classRef) => {
+    MessageFactory.messageRegistry[type] = classRef;
+  };
   static async createMessage(type, payload) {
-    switch (type) {
-      case MessageType.TEXT:
-        return new TextMessage(payload).createMessage();
-      case MessageType.IMAGE:
-        return new ImageMessage(payload).createMessage();
-      case MessageType.VIDEO:
-        return new VideoMessage(payload).createMessage();
-      case MessageType.CALL_HISTORY:
-        return new CallMessage(payload).createMessage();
-      default:
-        throw new Error("Invalid message type");
-    }
+    const messageClass = new this.messageRegistry[type]();
+    return new messageClass(payload).createMessage();
   }
+
+  //TODO: Update message
 }
 
 class MessageClass {
@@ -62,4 +55,11 @@ class CallMessage extends MessageClass {
     return super.createMessage();
   }
 }
+
+//register message type
+MessageFactory.registryMessageType(MessageType.TEXT, TextMessage);
+MessageFactory.registryMessageType(MessageType.IMAGE, ImageMessage);
+MessageFactory.registryMessageType(MessageType.VIDEO, VideoMessage);
+MessageFactory.registryMessageType(MessageType.CALL_HISTORY, CallMessage);
+
 module.exports = MessageFactory;

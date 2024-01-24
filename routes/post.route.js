@@ -1,5 +1,4 @@
 const express = require("express");
-const verifyToken = require("../middleware/verifyToken");
 const { uploadImage, uploadVideo } = require("../middleware/upload");
 const PostController = require("../controllers/post.controller");
 const errorHandler = require("../middleware/errorHandler");
@@ -20,7 +19,7 @@ const router = express.Router();
  *       200:
  *         description: All posts retrieved successfully
  */
-router.get("/all", verifyToken, errorHandler(PostController.getAllPosts));
+router.get("/all",  errorHandler(PostController.getAllPosts));
 
 /**
  * @swagger
@@ -33,7 +32,7 @@ router.get("/all", verifyToken, errorHandler(PostController.getAllPosts));
  */
 router.get(
   "/:userId",
-  verifyToken,
+  
   errorHandler(PostController.getPostByUserId)
 );
 
@@ -46,52 +45,9 @@ router.get(
  *       200:
  *         description: Post by ID retrieved successfully
  */
-router.get("/", verifyToken, errorHandler(PostController.getPostById));
+router.get("/",  errorHandler(PostController.getPostById));
 
-/**
- * @swagger
- * /post/comment/:id:
- *   delete:
- *     tags: [Post]
- *     responses:
- *       200:
- *         description: Comment deleted successfully
- */
-router.delete(
-  "/comment/:id",
-  verifyToken,
-  errorHandler(PostController.handleDeleteComment)
-);
 
-/**
- * @swagger
- * /post/react/:id:
- *   put:
- *     tags: [Post]
- *     responses:
- *       200:
- *         description: Post reacted successfully
- */
-router.put(
-  "/react/:id",
-  verifyToken,
-  errorHandler(PostController.handleReactPost)
-);
-
-/**
- * @swagger
- * /post/comment/:id:
- *   put:
- *     tags: [Post]
- *     responses:
- *       200:
- *         description: Comment posted successfully
- */
-router.put(
-  "/comment/:id",
-  verifyToken,
-  errorHandler(PostController.handleCommentPost)
-);
 
 /**
  * @swagger
@@ -102,9 +58,9 @@ router.put(
  *       200:
  *         description: Post updated successfully
  */
-router.put(
+router.patch(
   "/:id",
-  verifyToken,
+  
   //TODO
   errorHandler(PostController.handleUpdatePost)
 );
@@ -120,7 +76,7 @@ router.put(
  */
 router.delete(
   "/:id",
-  verifyToken,
+  
   errorHandler(PostController.handleDeletePost)
 );
 
@@ -135,7 +91,7 @@ router.delete(
  */
 router.post(
   "/create",
-  verifyToken,
+  
   //TODO
   errorHandler(PostController.handleCreatePost)
 );

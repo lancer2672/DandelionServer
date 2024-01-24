@@ -1,7 +1,8 @@
 const HEADER = {
   API_KEY: "x-api-key",
-  CLIENT_ID: "user-id",
+  CLIENT_ID: "x-client-id",
   AUTHORIZATION: "authorization",
+  REFRESH_TOKEN: "x-rtoken-id",
 };
 
 const MessageType = {
@@ -11,7 +12,14 @@ const MessageType = {
   CALL_HISTORY: "callHistory",
 };
 
+const FriendRequestStatus = {
+  ACCEPT:"accept",
+  DECLINE:"decline",
+  PENDING:"pending",
+
+}
 module.exports = {
   HEADER,
   MessageType,
+  FriendRequestStatus,
 };

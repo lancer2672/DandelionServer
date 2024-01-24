@@ -11,12 +11,17 @@ const {
 } = require("../classes/error/ErrorResponse");
 const { OK, CreatedResponse } = require("../classes/success/SuccessResponse");
 const S3ClientIns = require("../s3Client");
+const MessageRepository = require("../models/repositories/message.repo");
+const ChannelRepository = require("../models/repositories/channel.repo");
 
 class ChatService {
-  static async getChannels(userId) {
-    const channels = await Channel.find({ memberIds: { $in: [userId] } }).sort({
-      lastUpdate: -1,
-    });
+  static async getChannels({ userId, skip = 0, limit = 20 }) {
+    const channels = await ChannelRepository.findChannels(
+      { query: { memberIds: { $in: [userId] } } },
+      skip,
+      limit
+    );
+
     if (!channels) {
       throw new NotFoundError("Channels not found");
     }
@@ -35,10 +40,14 @@ class ChatService {
     return members;
   }
   static async getChannelMessages(channelId, limit, skip) {
-    const messages = await Message.find({ channelId: channelId })
-      .sort({ createdAt: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit));
+    const messages = await MessageRepository.getUserMessage({
+      query: {
+        channelId,
+      },
+      skip,
+      limit,
+    });
+
     return messages;
   }
 
