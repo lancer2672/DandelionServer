@@ -9,10 +9,11 @@ const friendRequestRoutes = require("./friendrequest.route");
 const notificationRoutes = require("./notification.route");
 const checkApiKey = require("../../../middleware/checkApiKey");
 const checkPermission = require("../../../middleware/checkPermission");
+const pushLogToDiscord = require("../../../middleware/pushDiscord");
 
+router.use(pushLogToDiscord)
 //check api key
 router.use(checkApiKey);
-
 //default permssion
 router.use(checkPermission('0'));
 

@@ -2,7 +2,13 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 const cors = require("cors");
-const dotenv = require("dotenv").config();
+require("dotenv").config();
+
+//dbInstance
+require("./db");
+//logger
+require("./logger/discord.log");
+
 
 const path = require("path");
 const helmet = require("helmet");
@@ -20,8 +26,6 @@ Global.socketIO = socketIOServer;
 //swagger
 const setupSwagger = require("./config/swagger");
 setupSwagger(app);
-//dbInstance
-const dbInstance = require("./db");
 
 const mainRoute = require("./api/v1/routes");
 
