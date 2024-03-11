@@ -1,12 +1,15 @@
 const FriendRequest = require("../models/friendrequest.model");
-const admin = require("../../../external/firebase/firebaseAdmin");
+const admin = require("../../../external/firebase");
 const Notification = require("../models/notification.model");
 const {
   BadRequestError,
   UnauthorizedError,
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
-const { OK, CreatedResponse } = require("../../../classes/success/SuccessResponse");
+const {
+  OK,
+  CreatedResponse,
+} = require("../../../classes/success/SuccessResponse");
 
 exports.getAllNotifications = async (req, res) => {
   const notifications = await Notification.find({

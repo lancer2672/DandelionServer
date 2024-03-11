@@ -1,5 +1,5 @@
 const { getSelectData } = require("../../../../utils");
-const { Channel } = require("../channel.model");
+const Channel = require("../channel.model");
 class ChannelRepository {
   static async findChannels({ query, limit, skip, select }) {
     return await Channel.find(query)
@@ -18,7 +18,9 @@ class ChannelRepository {
       .exec();
   }
   static async updateChannel(channelId, updateData) {
-    return await Channel.findByIdAndUpdate(channelId, updateData, { new: true }).exec();
+    return await Channel.findByIdAndUpdate(channelId, updateData, {
+      new: true,
+    }).exec();
   }
   static async findOneChannel(query) {
     return await Channel.findOne(query).exec();

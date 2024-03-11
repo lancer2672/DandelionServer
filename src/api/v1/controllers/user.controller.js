@@ -7,7 +7,10 @@ const {
   InternalServerError,
   NotFoundError,
 } = require("../../../classes/error/ErrorResponse");
-const { OK, CreatedResponse } = require("../../../classes/success/SuccessResponse");
+const {
+  OK,
+  CreatedResponse,
+} = require("../../../classes/success/SuccessResponse");
 const UserService = require("../services/user.service");
 
 exports.updateUser = async (req, res) => {
@@ -94,6 +97,7 @@ exports.getRecentSearchHistory = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
   try {
+    console.log(">>>getUserById", req.params.id);
     const user = await UserService.getUserById(req.params.id);
     new OK({
       message: "Success",
@@ -120,6 +124,7 @@ exports.getListUser = async (req, res) => {
 exports.saveFCMtoken = async (req, res) => {
   try {
     const { token } = req.body;
+    console.log("saveFCM TOKEN", { token, userId: req.userId });
     await UserService.saveFCMtoken(req.userId, token);
     new OK({
       message: "Success",

@@ -9,70 +9,58 @@ const { sendVerificationEmail } = require("../../../mailer");
 const CredentialService = require("./credential.service");
 const AuthUtils = require("../../../auth/auth.utils");
 const UserService = require("./user.service");
-class AuthService {
-  static register = async ({
-    password,
-    email,
-    firstname,
-    lastname,
-    dateOfBirth,
-  }) => {
-    const nickname = `${lastname} ${firstname}`;
-    const existUser = await User.findOne({ email: email.toLowerCase() });
-    const existCredential = existUser
-      ? await CredentialService.findByUserId(existUser._id)
-      : null;
+const CredentialModel = require("../models/credentials.model");
 
-    if (existCredential && existCredential.emailVerified) {
-      throw new BadRequestError("Email is already taken");
+class AuthService {
+  static register = async ({ email, firstname, lastname, dateOfBirth }) => {
+    console.log(">>>register", { email, firstname, lastname, dateOfBirth });
+    const existCredential = await CredentialService.findOne({
+      email: email.toLowerCase(),
+    });
+    if (!existCredential) {
+      throw new NotFoundError();
+    }
+    const user = await UserService.findOne({ credential: existCredential._id });
+    if (!user) {
+      throw new NotFoundError();
     }
 
-    const passwordHash = await AuthUtils.hashPassword(password);
-
-    let newUser = new User({
+    const userInfo = {
       email: email.toLowerCase(),
       avatar: {},
       lastname,
       firstname,
       dateOfBirth,
-      nickname,
-    });
-
-    await newUser.save();
-    await CredentialService.createCredential({
-      user: newUser,
-      password: passwordHash,
-    });
-
-    return newUser;
+    };
+    return await UserService.updateUser(user._id, userInfo);
   };
   static login = async ({ email, password }) => {
-    const existUser = await User.findOne({ email: email.toLowerCase() });
-    if (!existUser) {
-      throw new NotFoundError("User does not exist");
-    }
-
-    const existCredential = await CredentialService.findByUserId(existUser._id);
-    if (!existCredential || !existCredential.emailVerified) {
+    const credential = await CredentialModel.findOne({
+      email: email.toLowerCase(),
+    });
+    console.log(">>>Service.login", { credential, email });
+    if (!credential || !credential.emailVerified) {
       throw new NotFoundError("User has not been verified");
+    }
+    const user = await UserService.findOne({ credential: credential._id });
+    if (!user) {
+      throw new NotFoundError("User does not exist");
     }
 
     const compareRes = await AuthUtils.comparePasswords(
       password,
-      existCredential.password
+      credential.password
     );
 
-    if (!compareRes) {
-    }
     if (compareRes) {
       const { privateKey, publicKey } = AuthUtils.generateKeyPair();
       const { accessToken, refreshToken } = AuthUtils.generateTokenPair(
-        { userId: existUser._id },
+        { userId: user._id },
         publicKey,
         privateKey
       );
       await CredentialService.updateCredential({
-        credential: existCredential,
+        credential,
         updates: {
           accessToken,
           refreshToken,
@@ -83,7 +71,7 @@ class AuthService {
       return {
         token: accessToken,
         refreshToken: refreshToken,
-        user: existUser,
+        user,
       };
     } else {
       throw new BadRequestError("Incorrect information");
@@ -184,46 +172,64 @@ class AuthService {
     if (credential.emailVerificationCodeExpires < new Date()) {
       throw new BadRequestError("Verification code has expired");
     }
+
+    const updateFields = {
+      emailVerificationCode: null,
+      emailVerificationCodeExpires: null,
+    };
+    // in case user register
+    if (password) {
+      const passwordHash = await AuthUtils.hashPassword(password);
+      updateFields.password = passwordHash;
+      updateFields.emailVerified = true;
+    }
+
     await CredentialService.updateCredential({
       credential,
-      updates: {
-        emailVerificationCode: null,
-        emailVerified: true,
-        emailVerificationCodeExpires: null,
-      },
+      updates: updateFields,
     });
   };
-  static sendEmailVerification = async ({ email }) => {
-    if (!email) {
-      throw new BadRequestError("Email is empty");
+  static sendEmailVerification = async ({ email, isRegister = false }) => {
+    let credential = await CredentialService.findByEmail(email);
+
+    if (isRegister) {
+      if (credential && credential.emailVerified) {
+        throw new BadRequestError("Email is already taken");
+      } else if (!credential) {
+        credential = await CredentialService.createCredential({
+          email: email.toLowerCase(),
+        });
+      }
+
+      const user = await UserService.findOne({ credential: credential._id });
+      //create if user not exists
+      if (!user) {
+        await UserService.createUser({ credential: credential._id });
+      }
     }
+    //user not register yet
+    if (!credential) {
+      throw new NotFoundError();
+    }
+
     const code = AuthUtils.generateVerificationCode();
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
 
-    const user = await User.findOne({
-      email: email.toLowerCase(),
-    });
-
-    if (!user) {
-      throw new NotFoundError("User does not exist");
-    }
-
-    const credential = await CredentialService.findByUserId(user._id);
     await CredentialService.updateCredential({
       credential,
       updates: {
         emailVerificationCode: code,
-        emailVerified: true,
+        emailVerified: false,
         emailVerificationCodeExpires: expires,
       },
     });
 
-    const result = await sendVerificationEmail(email, code);
+    await sendVerificationEmail(email, code);
   };
   static resetPassword = async ({ email, newPassword }) => {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    const credential = await CredentialService.findByUserId(user._id);
+    const credential = await CredentialService.findByEmail(email);
+    const user = await UserService.findOne({ credential: credential._id });
 
     const passwordHash = await AuthUtils.hashPassword(newPassword);
     credential.password = passwordHash;
@@ -238,7 +244,7 @@ class AuthService {
   };
   static changePassword = async ({ userId, currentPassword, newPassword }) => {
     const user = await User.findById(userId);
-    const credential = await CredentialService.findByUserId(user._id);
+    const credential = await CredentialService.findById(user.credential);
 
     const isMatch = await AuthUtils.comparePasswords(
       currentPassword,

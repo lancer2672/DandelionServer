@@ -1,14 +1,17 @@
 const User = require("../models/user.model");
 const SearchHistory = require("../models/searchhistory.model");
-const {
-  NotFoundError,
-} = require("../../../classes/error/ErrorResponse");
+const { NotFoundError } = require("../../../classes/error/ErrorResponse");
 const S3ClientIns = require("../../../external/s3Client");
+const UserRepository = require("../models/repositories/user.repo");
 
 class UserService {
+  static findOne = async (query) => {
+    return await UserRepository.findOne(query);
+  };
   static findById = async (userId) => {
     return await User.findById(userId);
   };
+
   static async updateUser(userId, userToUpdate) {
     const user = await User.findById(userId);
     if (!user) {
@@ -99,8 +102,9 @@ class UserService {
     return mappedUser2;
   }
 
-  static async getUserById(id, select = { password: 2 }) {
+  static async getUserById(id, select = { password: 0 }) {
     const user = await User.findById(id).select(select).lean();
+    console.log("getUserById", user);
     return { user };
   }
 
@@ -125,6 +129,9 @@ class UserService {
     }
     const friends = user.friends.map((friend) => friend.userId);
     return { friends };
+  }
+  static async createUser(data) {
+    return await UserRepository.create(data);
   }
   static async updateUrl({ userId, fileId }) {
     const newUrl = await S3ClientIns.getSignedUrl(fileId);

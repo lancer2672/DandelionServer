@@ -1,5 +1,5 @@
 const Notification = require("../models/notification.model");
-const admin = require("../../../external/firebase/firebaseAdmin");
+const admin = require("../../../external/firebase");
 
 const NotificationType = {
   POST: "post",

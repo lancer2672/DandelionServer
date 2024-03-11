@@ -1,22 +1,16 @@
+const AuthUtils = require("../../../auth/auth.utils");
 const CredentialModel = require("../models/credentials.model");
-const { Types } = require("mongoose");
 class CredentialService {
-  // static createKeyToken = async ({ userId, publicKey }) => {
-  //   try {
-  //     //buffer ->toString
-  //     const publicKeyString = publicKey.toString();
-  //     const tokens = await CredentialModel.create({
-  //       user: userId,
-  //       publicKey: publicKey,
-  //     });
-  //     console.log("Tokens", { publicKey, publicKeyString });
-  //     // return tokens ? publicKeyString : null;
-  //   } catch (er) {
-  //     console.log(er);
-  //   }
-  // };
-  static findByUserId = async (userId) => {
-    return await CredentialModel.findOne({ user: userId });
+  static findOne = async (query) => {
+    return await CredentialModel.findOne(query);
+  };
+
+  //TODO: reformat code
+  static findByEmail = async (email) => {
+    return await CredentialModel.findOne({ email: email.toLowerCase() });
+  };
+  static findById = async (id) => {
+    return await CredentialModel.findById(id);
   };
   static findByRefreshToken = async (refreshToken) => {
     return await CredentialModel.findOne({ refreshToken });
@@ -50,15 +44,14 @@ class CredentialService {
   };
 
   static createCredential = async ({
-    user,
+    email,
     password,
     publicKey,
     privateKey,
   }) => {
-    const passwordHash = await AuthUtils.hashPassword(password);
     let credential = new CredentialModel({
-      user: user._id,
-      password: passwordHash,
+      email,
+      password,
       refreshTokensUsed: [],
       publicKey,
       privateKey,

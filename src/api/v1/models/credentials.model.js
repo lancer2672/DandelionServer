@@ -3,12 +3,11 @@ const Schema = mongoose.Schema;
 
 const CredentialSchema = new Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     password: {
+      type: String,
+      // required: true,
+    },
+    email: {
       type: String,
       // required: true,
     },

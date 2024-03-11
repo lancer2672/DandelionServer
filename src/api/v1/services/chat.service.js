@@ -9,7 +9,10 @@ const {
   NotFoundError,
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
-const { OK, CreatedResponse } = require("../../../classes/success/SuccessResponse");
+const {
+  OK,
+  CreatedResponse,
+} = require("../../../classes/success/SuccessResponse");
 const S3ClientIns = require("../../../external/s3Client");
 const MessageRepository = require("../models/repositories/message.repo");
 const ChannelRepository = require("../models/repositories/channel.repo");
@@ -25,6 +28,7 @@ class ChatService {
     if (!channels) {
       throw new NotFoundError("Channels not found");
     }
+    console.log(">>>ChatService.getChannels", { channels });
     return channels;
   }
 

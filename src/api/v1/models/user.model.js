@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { ImageSchema, VideoSchema } = require("./media.model");
+const { Timestamp } = require("mongodb");
 /**
  * @swagger
  * components:
@@ -83,22 +84,25 @@ const UserSchema = new Schema(
   {
     nickname: {
       type: String,
-      required: true,
+      default: "",
+    },
+    credential: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "credientials",
     },
     firstname: {
       type: String,
-      required: true,
-    },
-    lastname: {
-      type: String,
-      required: true,
-    },
-    dateOfBirth: {
-      type: Date,
+      default: "",
     },
     email: {
       type: String,
-      required: true,
+    },
+    lastname: {
+      type: String,
+      default: "",
+    },
+    dateOfBirth: {
+      type: String,
     },
     gender: {
       type: Number,
