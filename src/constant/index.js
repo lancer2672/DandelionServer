@@ -13,13 +13,19 @@ const MessageType = {
 };
 
 const FriendRequestStatus = {
-  ACCEPT:"accept",
-  DECLINE:"decline",
-  PENDING:"pending",
-
-}
+  ACCEPT: "accept",
+  DECLINE: "decline",
+  PENDING: "pending",
+};
+const RedisConnectStatus = {
+  CONNECT: "connect",
+  END: "end",
+  RECONNECT: "reconnect",
+  ERROR: "error",
+};
 module.exports = {
   HEADER,
   MessageType,
   FriendRequestStatus,
+  RedisConnectStatus,
 };
