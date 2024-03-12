@@ -1,8 +1,6 @@
 const { BadRequestError } = require("../classes/error/ErrorResponse");
-const { MessageType } = require("../constant");
-const {
-  Message,
-} = require("../api/v1/models/message.model");
+const { MESSAGE_TYPE } = require("../constant");
+const { Message } = require("../api/v1/models/message.model");
 
 class MessageFactory {
   // key - class
@@ -57,9 +55,9 @@ class CallMessage extends MessageClass {
 }
 
 //register message type
-MessageFactory.registryMessageType(MessageType.TEXT, TextMessage);
-MessageFactory.registryMessageType(MessageType.IMAGE, ImageMessage);
-MessageFactory.registryMessageType(MessageType.VIDEO, VideoMessage);
-MessageFactory.registryMessageType(MessageType.CALL_HISTORY, CallMessage);
+MessageFactory.registryMessageType(MESSAGE_TYPE.TEXT, TextMessage);
+MessageFactory.registryMessageType(MESSAGE_TYPE.IMAGE, ImageMessage);
+MessageFactory.registryMessageType(MESSAGE_TYPE.VIDEO, VideoMessage);
+MessageFactory.registryMessageType(MESSAGE_TYPE.CALL_HISTORY, CallMessage);
 
 module.exports = MessageFactory;

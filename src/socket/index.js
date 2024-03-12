@@ -39,12 +39,16 @@ module.exports = (socketIO) => {
       notificationEventHandler.handleMarkNotificationAsSeen
     );
     //location
-
     socket.on("send-location", locationEventHandler.handleSendLocation);
 
     //get friend location
     socket.on("start-tracking", locationEventHandler.handleStartTracking);
     socket.on("stop-tracking", locationEventHandler.handleStopTracking);
+
+    //call
+    // socket.on("call", undefined);
+    // socket.on("answer-call", undefined);
+    // socket.on("send-ICE", undefined);
 
     socket.on("disconnect", async () => {
       delete onlineUsers[userId];

@@ -36,6 +36,7 @@
     "nodemailer": "^6.9.5",
     "nodemailer-express-handlebars": "^6.1.0",
     "npm": "^10.2.4",
+    "redis": "^4.6.13",
     "sharp": "^0.32.6",
     "socket.io": "^4.6.0",
     "swagger-jsdoc": "^6.2.8",

@@ -5,23 +5,30 @@ const {
   NotificationType,
 } = require("../../api/v1/services/notification.service");
 const MessageFactory = require("../../factory/MessageFactory");
-const { MessageType } = require("../../constant");
+const { MESSAGE_TYPE } = require("../../constant");
 const ChannelRepository = require("../../api/v1/models/repositories/channel.repo");
 const UserRepository = require("../../api/v1/models/repositories/user.repo");
+const { ObjectId } = require("mongoose/lib/types");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
   socketIO.to(channelId).emit("receive-message", { newMess, channelId, type });
 };
 const getChannelMembers = async (userId, channelId) => {
-  const channel = await ChannelRepository.findChannels({ query: { _id: channelId } });
+  const channel = await ChannelRepository.findChannels({
+    query: { _id: channelId },
+  });
   const receiverId = channel.memberIds.find((memberId) => memberId != userId);
-  const receiver = await UserRepository.findUsers({ query: { _id: receiverId } });
+  const receiver = await UserRepository.findUsers({
+    query: { _id: receiverId },
+  });
   const sender = await UserRepository.findUsers({ query: { _id: userId } });
   return { receiver, sender };
 };
 const sendNotification = async ({ receiver, sender, channelId, message }) => {
-  const channel = await ChannelRepository.findChannels({ query: { _id: channelId } });
+  const channel = await ChannelRepository.findChannels({
+    query: { _id: channelId },
+  });
   console.log("SENDER", receiver.FCMtoken);
 
   const notificationData = {
@@ -39,13 +46,13 @@ const sendNotification = async ({ receiver, sender, channelId, message }) => {
 };
 const getNotificationContentByMsgType = (type, sender, messageObj) => {
   switch (type) {
-    case MessageType.TEXT:
+    case MESSAGE_TYPE.TEXT:
       return messageObj.attrs.message;
-    case MessageType.IMAGE:
+    case MESSAGE_TYPE.IMAGE:
       return `${sender.nickname} đã gửi cho bạn ảnh`;
-    case MessageType.VIDEO:
+    case MESSAGE_TYPE.VIDEO:
       return `${sender.nickname} đã gửi cho bạn video`;
-    case MessageType.CALL_HISTORY:
+    case MESSAGE_TYPE.CALL_HISTORY:
       return `đã bỏ lỡ cuộc gọi từ ${sender.nickname}`;
     default:
       return "";
@@ -123,11 +130,12 @@ const handleIncomingMessage = async function (data) {
   }
 };
 
-
-//join all channels 
+//join all channels
 const handleLogin = async (userId) => {
   try {
-    const chatChannels = await ChannelRepository.findChannels({ query: { usersId: { $in: [userId] } } });
+    const chatChannels = await ChannelRepository.findChannels({
+      query: { usersId: { $in: [userId] } },
+    });
     this.emit("get-channels", chatChannels);
   } catch (er) {
     console.log(er);
@@ -136,14 +144,18 @@ const handleLogin = async (userId) => {
 
 const handleUserOffline = async (userId) => {
   try {
-    await UserRepository.updateUser({ query: { _id: userId }, updateData: { lastOnline: new Date(), isOnline: 0 } });
+    await UserRepository.update(userId, {
+      lastOnline: new Date(),
+      isOnline: 0,
+    });
   } catch (er) {
     console.log(er);
   }
 };
 const handleUserOnline = async (userId) => {
+  console.log("handleUserOnline", userId);
   try {
-    await UserRepository.updateUser({ query: { _id: userId }, updateData: { isOnline: 1 } });
+    await UserRepository.update(userId, { isOnline: 1 });
   } catch (er) {
     console.log(er);
   }

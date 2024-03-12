@@ -12,7 +12,7 @@ const ApiKeyService = require("../api/v1/services/apikey.service");
 const { HEADER } = require("../constant");
 
 class AuthUtils {
-  static generateTokenPair = (payload,publicKey,privateKey) => {
+  static generateTokenPair = (payload, publicKey, privateKey) => {
     const accessToken = jwt.sign(payload, publicKey, {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     });
@@ -92,7 +92,7 @@ class AuthUtils {
   static verifyAuthentication = errorHandler(async (req, res, next) => {
     const userId = req.headers[HEADER.CLIENT_ID];
     if (!userId) throw new UnauthorizedError("Invalid Request");
-    const credential = await CredentialService.findByUserId(userId);
+    const credential = await CredentialService.findByEmail(userId);
     if (!credential) throw new NotFoundError("Not Found Credential");
 
     if (req.headers[HEADER.REFRESH_TOKEN]) {

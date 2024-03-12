@@ -51,6 +51,11 @@ class ConflictError extends ErrorResponse {
     super(message, status);
   }
 }
+class RedisErrorResponse extends ErrorResponse {
+  constructor(message = "", status = StatusCode.INTERNAL_SERVER_ERROR) {
+    super(message, status);
+  }
+}
 class InternalServerError extends ErrorResponse {
   constructor(
     message = Response.INTERNAL_SERVER_ERROR,
@@ -67,4 +72,5 @@ module.exports = {
   NotFoundError,
   InternalServerError,
   ForbiddenError,
+  RedisErrorResponse,
 };

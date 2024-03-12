@@ -1,12 +1,11 @@
 const redis = require("redis");
 const config = require("../../config/appConfig");
-const { RedisConnectStatus } = require("../../constant");
 
 const DEFAULT_CLIENT_CONFIG = {
   url: config.redis.url,
 };
-
 const DEFAULT_CLIENT = "default";
+
 const redisClientListener = async (clientName = "", redisClient) => {
   await redisClient
     .connect()
@@ -26,6 +25,7 @@ const redisClientListener = async (clientName = "", redisClient) => {
   //     console.log(`Redis Client ${clientName}: Reconnecting`);
   //   });
 };
+
 class RedisClient {
   //create new redis instance
 

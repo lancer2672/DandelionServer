@@ -8,7 +8,7 @@ require("dotenv").config();
 require("./db");
 //logger
 require("./logger/discord.log");
-
+require("./external/redis/");
 
 const path = require("path");
 const helmet = require("helmet");
