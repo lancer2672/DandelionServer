@@ -24,17 +24,11 @@ class RedisClient {
 
   constructor() {
     this.clients = {};
-
-    //NOTE: not recommended
-    //init client
-    (async () => {
-      await this.connect(DEFAULT_CLIENT, DEFAULT_CLIENT_CONFIG);
-    })();
   }
   //init new Redis client
   async connect(name, options) {
     this.clients[name] = redis.createClient(options);
-    await redisClientListener(name, this.clients[name]);
+    return redisClientListener(name, this.clients[name]);
   }
   getClient(name) {
     return this.clients[name];
@@ -42,4 +36,5 @@ class RedisClient {
 }
 
 const redisClientInstance = new RedisClient();
+redisClientInstance.connect(DEFAULT_CLIENT, DEFAULT_CLIENT_CONFIG);
 module.exports = redisClientInstance;

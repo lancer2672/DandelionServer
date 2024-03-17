@@ -10,6 +10,9 @@ const config = {
   redis: {
     url: process.env.REDIS_URL,
   },
+  rabbitMQ: {
+    url: process.env.RABBIT_URL,
+  },
 };
 
 module.exports = config;

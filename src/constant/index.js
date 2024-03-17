@@ -24,10 +24,23 @@ const REDIS_CONNECTION_STATUS = {
   ERROR: "error",
 };
 const REDIS_CONNECTION_TIMEOUT = 10000;
+
+const RABBIT_MQ_CONFIG = {
+  DLX_EX_NAME: "dead-letters-exchange",
+  DLX_QUEUE_NAME: "dlx-queue",
+  DLX_ROUTING_KEY: "dead-exchange-rkey",
+
+  TTL_VALUE: 5000,
+
+  NOTIFICATION_EX_NAME: "notification-exchange",
+  NOTI_QUEUE_NAME: "notification-queue",
+  NOTIFICATION_ROUTING_KEY: "notification-rkey",
+};
 module.exports = {
   HEADER,
   REDIS_CONNECTION_TIMEOUT,
   MESSAGE_TYPE,
   FRIEND_REQUEST_STATUS,
   REDIS_CONNECTION_STATUS,
+  RABBIT_MQ_CONFIG,
 };

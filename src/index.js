@@ -8,7 +8,9 @@ require("dotenv").config();
 require("./db");
 //logger
 require("./logger/discord.log");
+//external
 require("./external/redis/");
+require("./external/rabbitmq");
 
 const path = require("path");
 const helmet = require("helmet");
