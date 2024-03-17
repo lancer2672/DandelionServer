@@ -1,6 +1,6 @@
-const { BadRequestError } = require("../classes/error/ErrorResponse");
-const { MESSAGE_TYPE } = require("../constant");
-const { Message } = require("../api/v1/models/message.model");
+const { BadRequestError } = require("../error/ErrorResponse");
+const { MESSAGE_TYPE } = require("../../constant");
+const { Message } = require("../../api/v1/models/message.model");
 
 class MessageFactory {
   // key - class
@@ -12,8 +12,6 @@ class MessageFactory {
     const messageClass = new this.messageRegistry[type]();
     return new messageClass(payload).createMessage();
   }
-
-  //TODO: Update message
 }
 
 class MessageClass {
