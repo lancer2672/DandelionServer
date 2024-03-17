@@ -1,10 +1,6 @@
 const Channel = require("../../api/v1/models/channel.model");
 const Global = require("../global");
 const {
-  NotificationService,
-  NotificationType,
-} = require("../../api/v1/services/notification.service");
-const {
   MessageFactory,
   MessageClass,
 } = require("../../classes/factory/MessageFactory");
@@ -32,39 +28,39 @@ const getChannelMembers = async (userId, channelId) => {
   const sender = await UserRepository.findUsers({ query: { _id: userId } });
   return { receiver, sender };
 };
-const sendNotification = async ({ receiver, sender, channelId, message }) => {
-  const channel = await ChannelRepository.findChannels({
-    query: { _id: channelId },
-  });
-  console.log("SENDER", receiver.FCMtoken);
+// const sendNotification = async ({ receiver, sender, channelId, message }) => {
+//   const channel = await ChannelRepository.findChannels({
+//     query: { _id: channelId },
+//   });
+//   console.log("SENDER", receiver.FCMtoken);
 
-  const notificationData = {
-    tokens: [receiver.FCMtoken],
-    type: NotificationType.CHAT,
-    messageData: {
-      message,
-      notificationId: channelId,
-      memberIds: JSON.stringify(channel.memberIds),
-      avatar: sender.avatar.url || "",
-      nickname: sender.nickname,
-    },
-  };
-  await NotificationService.sendNotification(notificationData);
-};
-const getNotificationContentByMsgType = (type, sender, messageObj) => {
-  switch (type) {
-    case MESSAGE_TYPE.TEXT:
-      return messageObj.attrs.message;
-    case MESSAGE_TYPE.IMAGE:
-      return `${sender.nickname} đã gửi cho bạn ảnh`;
-    case MESSAGE_TYPE.VIDEO:
-      return `${sender.nickname} đã gửi cho bạn video`;
-    case MESSAGE_TYPE.CALL_HISTORY:
-      return `đã bỏ lỡ cuộc gọi từ ${sender.nickname}`;
-    default:
-      return "";
-  }
-};
+//   const notificationData = {
+//     tokens: [receiver.FCMtoken],
+//     type: NotificationType.CHAT,
+//     messageData: {
+//       message,
+//       notificationId: channelId,
+//       memberIds: JSON.stringify(channel.memberIds),
+//       avatar: sender.avatar.url || "",
+//       nickname: sender.nickname,
+//     },
+//   };
+//   await NotificationService.sendNotification(notificationData);
+// };
+// const getNotificationContentByMsgType = (type, sender, messageObj) => {
+//   switch (type) {
+//     case MESSAGE_TYPE.TEXT:
+//       return messageObj.attrs.message;
+//     case MESSAGE_TYPE.IMAGE:
+//       return `${sender.nickname} đã gửi cho bạn ảnh`;
+//     case MESSAGE_TYPE.VIDEO:
+//       return `${sender.nickname} đã gửi cho bạn video`;
+//     case MESSAGE_TYPE.CALL_HISTORY:
+//       return `đã bỏ lỡ cuộc gọi từ ${sender.nickname}`;
+//     default:
+//       return "";
+//   }
+// };
 const createMessage = async function (data) {
   const { channelId, type } = data;
   console.log("createMessage", data);
@@ -114,22 +110,35 @@ const handleSetSeenMessages = async function ({ channelId }) {
 
 const handleIncomingMessage = async function (data) {
   try {
+    const channel = await ChannelRepository.findChannels({
+      query: { _id: channelId },
+    });
+
     const userId = this.handshake.query.userId;
     const { channelId, type: messageType, attrs } = data;
     const newMessage = await createMessage(data);
-
     emitMessage(channelId, newMessage, messageType);
     const { receiver, sender } = await getChannelMembers(userId, channelId);
     console.log("newMessage", newMessage);
-    const messageDescription = MessageClass.getNotificationContentByMsgType(
-      messageType
-    )(sender.nickname, attrs.message || "");
+    const notificationDescription =
+      MessageClass.getNotificationContentByMsgType(messageType)(
+        sender.nickname,
+        attrs.message || ""
+      );
+
     const notification = NotificationFactory.createNotification(
       NOTIFICATION_TYPE.CHAT,
       {
-        description: messageDescription,
-        receiverId: "60d0fe4f7439346e18c6343a",
-        senderId: "60d0fe4f7439346e18c6343b",
+        description: notificationDescription,
+        receiverId: receiver._id,
+        senderId: sender._id,
+        payload: {
+          message,
+          notificationId: channelId,
+          memberIds: JSON.stringify(channel.memberIds),
+          avatar: sender.avatar.url || "",
+          nickname: sender.nickname,
+        },
       }
     );
     await notificationServiceIns.publishMessage(notification.stringify());

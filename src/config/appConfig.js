@@ -1,3 +1,4 @@
+const vn_language = require("../i18n/vi");
 const config = {
   app: {
     port: process.env.PORT || "3000",
@@ -13,6 +14,7 @@ const config = {
   rabbitMQ: {
     url: process.env.RABBIT_URL,
   },
+  language: vn_language,
 };
 
 module.exports = config;

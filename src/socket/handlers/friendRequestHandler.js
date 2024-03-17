@@ -9,7 +9,12 @@ const {
 const Global = require("../global");
 const ChannelRepository = require("../../api/v1/models/repositories/channel.repo");
 const UserRepository = require("../../api/v1/models/repositories/user.repo");
-const { FRIEND_REQUEST_STATUS } = require("../../constant");
+const { FRIEND_REQUEST_STATUS, NOTIFICATION_TYPE } = require("../../constant");
+const notificationServiceIns = require("../../services/notification");
+const {
+  NotificationFactory,
+} = require("../../classes/factory/NotificationFactory");
+const config = require("../../config/appConfig");
 
 const addFriendToFriendList = async (userIdA, userIdB) => {
   try {
@@ -72,6 +77,18 @@ const handleAcceptFriendRequest = async (request) => {
   socketIO.to(receiverSocketId).emit("response-friendRequest", responseData);
 };
 
+const sendNotificationFriendRequest = async ({ sender, payload, receiver }) => {
+  const notification = NotificationFactory.createNotification(
+    NOTIFICATION_TYPE.FRIEND_REQUEST,
+    {
+      description,
+      receiverId: receiver._id,
+      senderId: sender._id,
+      payload,
+    }
+  );
+  await notificationServiceIns.publishMessage(notification.stringify());
+};
 const unFriend = async (data) => {
   const { userId, friendId } = data;
   const socketIO = Global.socketIO;
@@ -143,19 +160,25 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
     );
     //if existed then accept the request
     if (existedRequestBtoA) {
-      await handleAcceptFriendRequest(existedRequestBtoA);
       await addFriendToFriendList(senderId, receiverId);
       await addFriendToFriendList(receiverId, senderId);
+      await handleAcceptFriendRequest(existedRequestBtoA);
 
-      console.log("Friend request from B to A is accepted");
+      const description = config.language.ACCEPT_FRIEND_REQUEST(
+        sender.nickname
+      ).text;
 
-      await NotificationService.sendNotification({
-        tokens: [sender.FCMtoken],
-        messageData: {
-          message: `${receiver.nickname} accepeted your friend request`,
+      await sendNotificationFriendRequest({
+        sender,
+        receiver,
+        payload: {
+          notificationId: existedRequestBtoA._id,
+          nickname: `${sender.nickname}`,
+          avatar: sender.avatar.url,
+          message: description,
         },
-        type: NotificationType.FRIEND_REQUEST,
       });
+      console.log("Friend request from B to A is accepted");
     } else {
       const newRequest = new FriendRequestModel({
         sender: senderId,
@@ -167,6 +190,22 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
       socketIO.to(receiverSocketId).emit("send-friendRequest", "accept");
 
       socketIO.to(receiverSocketId).emit("new-notification");
+
+      const description = config.language.SENT_FRIEND_REQUEST(
+        sender.nickname
+      ).text;
+
+      await sendNotificationFriendRequest({
+        sender,
+        receiver,
+        payload: {
+          notificationId: newRequest._id,
+          nickname: `${sender.nickname}`,
+          avatar: sender.avatar.url,
+          message: description,
+        },
+      });
+
       await NotificationService.sendNotification({
         tokens: [receiver.FCMtoken],
         messageData: {

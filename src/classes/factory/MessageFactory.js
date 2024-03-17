@@ -1,6 +1,7 @@
 const { BadRequestError } = require("../error/ErrorResponse");
 const { MESSAGE_TYPE } = require("../../constant");
 const { Message } = require("../../api/v1/models/message.model");
+const config = require("../../config/appConfig");
 
 class MessageFactory {
   // key - class
@@ -32,11 +33,14 @@ class MessageClass {
       case MESSAGE_TYPE.TEXT:
         return (senderName, message) => message;
       case MESSAGE_TYPE.IMAGE:
-        return (senderName, message) => `${senderName} đã gửi cho bạn ảnh`;
+        return (senderName, message) =>
+          config.language.SENT_PHOTO(senderName).text;
       case MESSAGE_TYPE.VIDEO:
-        return (senderName, message) => `${senderName} đã gửi cho bạn video`;
+        return (senderName, message) =>
+          config.language.SENT_VIDEO(senderName).text;
       case MESSAGE_TYPE.CALL_HISTORY:
-        return (senderName, message) => `đã bỏ lỡ cuộc gọi từ ${senderName}`;
+        return (senderName, message) =>
+          config.language.MISS_CALL(senderName).text;
       default:
         return "";
     }

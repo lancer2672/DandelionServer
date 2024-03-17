@@ -6,35 +6,32 @@ const {
   NotificationService,
   NotificationType,
 } = require("../../api/v1/services/notification.service");
-
+const config = require("../../config/appConfig");
+const { NOTIFICATION_TYPE } = require("../../constant");
+const notificationServiceIns = require("../../services/notification");
+const {
+  NotificationFactory,
+} = require("../../classes/factory/NotificationFactory");
 const sendNotification = async ({
   postCreator,
   reactor,
   postId,
   notificationMessage,
 }) => {
-  const notification = new Notification({
-    description: `${reactor.nickname} ${notificationMessage}`,
-    senderIds: [
-      {
-        userId: reactor._id,
-        createdAt: Date.now(),
+  const notification = NotificationFactory.createNotification(
+    NOTIFICATION_TYPE.POST,
+    {
+      description: `${reactor.nickname} ${notificationMessage}`,
+      receiverId: postCreator._id,
+      senderId: reactor._id,
+      payload: {
+        message: `${notificationMessage}`,
+        nickname: `${reactor.nickname} `,
+        notificationId: postId,
       },
-    ],
-    receiverId: postCreator._id,
-    postId,
-  });
-  await notification.save();
-
-  await NotificationService.sendNotification({
-    tokens: [postCreator.FCMtoken],
-    messageData: {
-      message: `${notificationMessage}`,
-      nickname: `${reactor.nickname} `,
-      notificationId: postId,
-    },
-    type: NotificationType.POST,
-  });
+    }
+  );
+  await notificationServiceIns.publishMessage(notification.stringify());
 };
 
 const createNewComment = (content, userId) => ({
@@ -87,7 +84,8 @@ const handleUploadComment = async function (data) {
         postCreator,
         reactor: commentUser,
         postId,
-        notificationMessage: "commented on your post",
+        //use nickname seperately
+        notificationMessage: config.language.COMMENT_POST("").text,
       });
     }
   } catch (er) {
@@ -103,7 +101,7 @@ const handleReactPost = async function (data) {
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId).select("-password");
     const reactUser = await User.findById(reactUserId);
-    
+
     let userIndex = post.likes.findIndex((item) => item.userId == reactUserId);
 
     if (addToList) {
@@ -134,7 +132,7 @@ const handleReactPost = async function (data) {
         postCreator,
         reactor: reactUser,
         postId,
-        notificationMessage: "reacted your post",
+        notificationMessage: config.language.REACT_POST("").text,
       });
     }
   } catch (er) {
