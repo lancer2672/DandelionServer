@@ -27,6 +27,20 @@ class MessageClass {
   async createMessage() {
     return await Message.create(this);
   }
+  static getNotificationContentByMsgType = (type) => {
+    switch (type) {
+      case MESSAGE_TYPE.TEXT:
+        return (senderName, message) => message;
+      case MESSAGE_TYPE.IMAGE:
+        return (senderName, message) => `${senderName} đã gửi cho bạn ảnh`;
+      case MESSAGE_TYPE.VIDEO:
+        return (senderName, message) => `${senderName} đã gửi cho bạn video`;
+      case MESSAGE_TYPE.CALL_HISTORY:
+        return (senderName, message) => `đã bỏ lỡ cuộc gọi từ ${senderName}`;
+      default:
+        return "";
+    }
+  };
 }
 
 class TextMessage extends MessageClass {
@@ -58,4 +72,4 @@ MessageFactory.registryMessageType(MESSAGE_TYPE.IMAGE, ImageMessage);
 MessageFactory.registryMessageType(MESSAGE_TYPE.VIDEO, VideoMessage);
 MessageFactory.registryMessageType(MESSAGE_TYPE.CALL_HISTORY, CallMessage);
 
-module.exports = MessageFactory;
+module.exports = { MessageFactory, MessageClass };

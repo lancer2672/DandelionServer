@@ -12,6 +12,12 @@ const MESSAGE_TYPE = {
   CALL_HISTORY: "callHistory",
 };
 
+const NOTIFICATION_TYPE = {
+  POST: "post",
+  CHAT: "chat",
+  FRIEND_REQUEST: "friend-request",
+};
+
 const FRIEND_REQUEST_STATUS = {
   ACCEPT: "accept",
   DECLINE: "decline",
@@ -43,4 +49,5 @@ module.exports = {
   FRIEND_REQUEST_STATUS,
   REDIS_CONNECTION_STATUS,
   RABBIT_MQ_CONFIG,
+  NOTIFICATION_TYPE,
 };

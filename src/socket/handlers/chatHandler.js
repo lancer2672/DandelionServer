@@ -4,11 +4,18 @@ const {
   NotificationService,
   NotificationType,
 } = require("../../api/v1/services/notification.service");
-const MessageFactory = require("../../factory/MessageFactory");
-const { MESSAGE_TYPE } = require("../../constant");
+const {
+  MessageFactory,
+  MessageClass,
+} = require("../../classes/factory/MessageFactory");
+const { MESSAGE_TYPE, NOTIFICATION_TYPE } = require("../../constant");
 const ChannelRepository = require("../../api/v1/models/repositories/channel.repo");
 const UserRepository = require("../../api/v1/models/repositories/user.repo");
 const { ObjectId } = require("mongoose/lib/types");
+const {
+  NotificationFactory,
+} = require("../../classes/factory/NotificationFactory");
+const notificationServiceIns = require("../../services/notification");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
@@ -108,23 +115,24 @@ const handleSetSeenMessages = async function ({ channelId }) {
 const handleIncomingMessage = async function (data) {
   try {
     const userId = this.handshake.query.userId;
-    const { channelId, type: messageType } = data;
+    const { channelId, type: messageType, attrs } = data;
     const newMessage = await createMessage(data);
 
     emitMessage(channelId, newMessage, messageType);
     const { receiver, sender } = await getChannelMembers(userId, channelId);
     console.log("newMessage", newMessage);
-    const message = getNotificationContentByMsgType(
-      messageType,
-      sender,
-      newMessage
+    const messageDescription = MessageClass.getNotificationContentByMsgType(
+      messageType
+    )(sender.nickname, attrs.message || "");
+    const notification = NotificationFactory.createNotification(
+      NOTIFICATION_TYPE.CHAT,
+      {
+        description: messageDescription,
+        receiverId: "60d0fe4f7439346e18c6343a",
+        senderId: "60d0fe4f7439346e18c6343b",
+      }
     );
-    await sendNotification({
-      receiver,
-      sender,
-      channelId,
-      message,
-    });
+    await notificationServiceIns.publishMessage(notification.stringify());
   } catch (er) {
     console.log("error handling incoming message", er);
   }

@@ -11,7 +11,6 @@ require("./logger/discord.log");
 //external
 require("./external/redis/");
 require("./external/rabbitmq");
-
 const path = require("path");
 const helmet = require("helmet");
 const compression = require("compression");
