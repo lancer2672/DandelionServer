@@ -60,6 +60,7 @@ const Schema = mongoose.Schema;
 
 const NotificationSchema = new Schema(
   {
+    type: { type: String, enum: ["chat", "post", "friend-request"] },
     description: {
       type: String,
       require: true,

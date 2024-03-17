@@ -1,29 +1,22 @@
 const redis = require("redis");
 const config = require("../../config/appConfig");
+const { REDIS_CONNECTION_STATUS } = require("../../constant");
 
 const DEFAULT_CLIENT_CONFIG = {
   url: config.redis.url,
 };
 const DEFAULT_CLIENT = "default";
 
+const handleConnectionTimeout = () => {};
 const redisClientListener = async (clientName = "", redisClient) => {
   await redisClient
     .connect()
     .then(() => {
       console.log(`Redis Client "${clientName}": Connected`);
     })
-    .catch((er) => {
+    .catch((err) => {
       console.log(`Redis Client ${clientName}: Error`, err);
     });
-  //   redisClient.on(RedisConnectStatus.CONNECT, () => {
-  //     console.log(`Redis Client ${clientName}: Connected`);
-  //   });
-  //   redisClient.on(RedisConnectStatus.ERROR, (err) => {
-  //     console.log(`Redis Client ${clientName}: Error`, err);
-  //   });
-  //   redisClient.on(RedisConnectStatus.RECONNECT, () => {
-  //     console.log(`Redis Client ${clientName}: Reconnecting`);
-  //   });
 };
 
 class RedisClient {
