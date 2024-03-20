@@ -206,16 +206,16 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
         },
       });
 
-      await NotificationService.sendNotification({
-        tokens: [receiver.FCMtoken],
-        messageData: {
-          notificationId: newRequest._id,
-          nickname: `${sender.nickname}`,
-          avatar: sender.avatar.url,
-          message: `${sender.nickname} sent you a friend request`,
-        },
-        type: NotificationType.FRIEND_REQUEST,
-      });
+      // await NotificationService.sendNotification({
+      //   tokens: [receiver.FCMtoken],
+      //   messageData: {
+      //     notificationId: newRequest._id,
+      //     nickname: `${sender.nickname}`,
+      //     avatar: sender.avatar.url,
+      //     message: `${sender.nickname} sent you a friend request`,
+      //   },
+      //   type: NotificationType.FRIEND_REQUEST,
+      // });
       console.log("Created friend request");
     }
   } catch (er) {
