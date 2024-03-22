@@ -110,19 +110,19 @@ const handleSetSeenMessages = async function ({ channelId }) {
 
 const handleIncomingMessage = async function (data) {
   try {
-    const channel = await ChannelRepository.findChannels({
-      query: { _id: channelId },
-    });
-
-    const userId = this.handshake.query.userId;
     const { channelId, type: messageType, attrs } = data;
-    const newMessage = await createMessage(data);
-    emitMessage(channelId, newMessage, messageType);
-    const { receiver, sender } = await getChannelMembers(userId, channelId);
-    console.log("newMessage", newMessage);
+
+    // const channel = await ChannelRepository.findChannels({
+    //   query: { _id: channelId },
+    // });
+    // const userId = this.handshake.query.userId;
+    // const newMessage = await createMessage(data);
+    // emitMessage(channelId, newMessage, messageType);
+    // const { receiver, sender } = await getChannelMembers(userId, channelId);
+    // console.log("newMessage", newMessage);
     const notificationDescription =
       MessageClass.getNotificationContentByMsgType(messageType)(
-        sender.nickname,
+        "sender.nickname",
         attrs.message || ""
       );
 
@@ -130,14 +130,16 @@ const handleIncomingMessage = async function (data) {
       NOTIFICATION_TYPE.CHAT,
       {
         description: notificationDescription,
-        receiverId: receiver._id,
-        senderId: sender._id,
+        receiverId: 123,
+        senderId: 321,
+        // receiverId: receiver._id,
+        // senderId: sender._id,
         payload: {
-          message,
+          message: "message",
           notificationId: channelId,
-          memberIds: JSON.stringify(channel.memberIds),
-          avatar: sender.avatar.url || "",
-          nickname: sender.nickname,
+          // memberIds: JSON.stringify(channel.memberIds),
+          // avatar: sender.avatar.url || "",
+          // nickname: sender.nickname,
         },
       }
     );
