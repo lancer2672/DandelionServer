@@ -12,12 +12,13 @@ const ApiKeySchema = new Schema(
       type: Boolean,
       default: true,
     },
-    permissions: {
-      type: [String],
-      require: true,
-      default: [0, 1, 2],
+    role: {
+      type: Schema.Types.ObjectId,
+      ref: "Role",
+      required: true,
     },
   },
   { timestamps: true }
 );
+
 module.exports = mongoose.model("apikeys", ApiKeySchema);
