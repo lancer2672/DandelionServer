@@ -26,5 +26,5 @@ postman
 # Ignore all local history of files
 .history
 .ionide
-
+private.key
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode

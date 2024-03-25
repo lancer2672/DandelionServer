@@ -11,11 +11,11 @@ const checkApiKey = require("../../../middleware/checkApiKey");
 const checkPermission = require("../../../middleware/checkPermission");
 const pushLogToDiscord = require("../../../middleware/pushDiscord");
 
-router.use(pushLogToDiscord)
+router.use(pushLogToDiscord);
 //check api key
 router.use(checkApiKey);
 //default permssion
-router.use(checkPermission('0'));
+// router.use(checkPermission("0"));
 
 router.use("/api/auth", authRoutes);
 

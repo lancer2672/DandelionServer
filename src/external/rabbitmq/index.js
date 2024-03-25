@@ -15,7 +15,8 @@ class RabbitMQClass {
       RabbitMQClass.channel = await RabbitMQClass.connection.createChannel();
       console.log("Connected to RabbitMQ");
     } catch (error) {
-      throw new Error(`Cannot connect to rabbitMQ error: ${error}`);
+      console.log(`Cannot connect to rabbitMQ error: ${error}`);
+      // throw new Error(`Cannot connect to rabbitMQ error: ${error}`);
     }
   }
 

@@ -78,7 +78,7 @@ const { Timestamp } = require("mongodb");
  *         friends: [{ userId: "60d0fe4f7439346e18c6343b", createdAt: "2023-12-05T08:39:32.000Z" }]
  *         isOnline: 1
  *         lastOnline: "2023-12-05T08:39:32.000Z"
- */
+ */        
 
 const UserSchema = new Schema(
   {

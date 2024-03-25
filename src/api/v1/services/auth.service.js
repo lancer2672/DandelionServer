@@ -10,7 +10,10 @@ const CredentialService = require("./credential.service");
 const AuthUtils = require("../../../auth/auth.utils");
 const UserService = require("./user.service");
 const CredentialModel = require("../models/credentials.model");
+const fs = require("fs");
+const path = require("path");
 
+const privateKeyPath = path.join(__dirname, "../../../../private.key");
 class AuthService {
   static register = async ({ email, firstname, lastname, dateOfBirth }) => {
     console.log(">>>register", { email, firstname, lastname, dateOfBirth });
@@ -53,10 +56,9 @@ class AuthService {
     );
 
     if (compareRes) {
-      const { privateKey, publicKey } = AuthUtils.generateKeyPair();
+      const privateKey = fs.readFileSync(privateKeyPath, "utf8");
       const { accessToken, refreshToken } = AuthUtils.generateTokenPair(
         { userId: user._id },
-        publicKey,
         privateKey
       );
       await CredentialService.updateCredential({
@@ -64,8 +66,6 @@ class AuthService {
         updates: {
           accessToken,
           refreshToken,
-          publicKey,
-          privateKey,
         },
       });
       return {
@@ -103,21 +103,15 @@ class AuthService {
     //   await CredentialService.createCredential({
     //     user,
     //     password: passwordHash,
-    //     publicKey,
-    //     privateKey,
     //   });
     // }
     // const { accessToken, refreshToken } =  AuthUtils.generateTokenPair(
     //   { userId: user._id },
-    //    publicKey,
-    //   privateKey
     // );
     // await CredentialService.updateCredential({
     //   credential,
     //   accessToken,
     //   refreshToken,
-    //   publicKey,
-    //   privateKey,
     // });
     // if (credential) {
     //   credential.accessToken = accessToken;
@@ -143,11 +137,8 @@ class AuthService {
     const foundUser = UserService.findById(userId);
     if (!foundUser) throw new UnauthorizedError();
     //create new token pair
-    const newTokens = AuthUtils.generateTokenPair(
-      { userId },
-      credential.publicKey,
-      credential.privateKey
-    );
+    const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+    const newTokens = AuthUtils.generateTokenPair({ userId }, privateKey);
 
     await CredentialService.updateCredential({
       credential,

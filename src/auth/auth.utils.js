@@ -12,12 +12,14 @@ const ApiKeyService = require("../api/v1/services/apikey.service");
 const { HEADER } = require("../constant");
 
 class AuthUtils {
-  static generateTokenPair = (payload, publicKey, privateKey) => {
-    const accessToken = jwt.sign(payload, publicKey, {
+  static generateTokenPair = (payload, privateKey) => {
+    const accessToken = jwt.sign(payload, privateKey, {
+      algorithm: "RS256",
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     });
 
     const refreshToken = jwt.sign(payload, privateKey, {
+      algorithm: "RS256",
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     });
 
@@ -28,8 +30,9 @@ class AuthUtils {
   };
 
   static verifyJWT = (accessToken, publicKey) => {
-    return jwt.verify(accessToken, publicKey);
+    return jwt.verify(accessToken, publicKey, { algorithms: ["RS256"] });
   };
+
   static generateVerificationCode = () => {
     return Math.floor(Math.random() * 900000) + 100000;
   };
@@ -40,15 +43,6 @@ class AuthUtils {
 
   static comparePasswords = async (password, hashedPassword) => {
     return await bcrypt.compare(password, hashedPassword);
-  };
-
-  static generateKeyPair = () => {
-    const privateKey = crypto.randomBytes(64).toString("hex");
-    const publicKey = crypto.randomBytes(64).toString("hex");
-    return {
-      privateKey,
-      publicKey,
-    };
   };
 
   static checkApiKey = async (req, res, next) => {

@@ -53,6 +53,16 @@ router.post("/login", errorHandler(AuthController.login));
 
 /**
  * @swagger
+ * /auth/checkapikey:
+ *   get:
+ *     tags: [Auth]
+ *     description: Check permission of api key
+ *     responses:
+ */
+router.get("/checkapikey", errorHandler(AuthController.checkApiKey));
+
+/**
+ * @swagger
  * /auth/register:
  *   post:
  *     tags: [Auth]
@@ -113,10 +123,7 @@ router.post("/logout", errorHandler(AuthController.logout));
  *       200:
  *         description: Password changed successfully
  */
-router.put(
-  "/change-password",
-  errorHandler(AuthController.changePassword)
-);
+router.put("/change-password", errorHandler(AuthController.changePassword));
 
 /**
  * @swagger
@@ -127,10 +134,7 @@ router.put(
  *       200:
  *         description: Login with Google successful
  */
-router.post(
-  "/google",
-  errorHandler(AuthController.loginWithGoogle)
-);
+router.post("/google", errorHandler(AuthController.loginWithGoogle));
 /**
  * @swagger
  * /auth/refresh-token:
@@ -140,10 +144,7 @@ router.post(
  *       200:
  *         description: Token refreshed successfully
  */
-router.post(
-  "/refresh-token",
-  errorHandler(AuthController.refreshToken)
-);
+router.post("/refresh-token", errorHandler(AuthController.refreshToken));
 
 /**
  * @swagger
@@ -154,9 +155,6 @@ router.post(
  *       200:
  *         description: Password reset successful
  */
-router.put(
-  "/reset-password",
-  errorHandler(AuthController.resetPassword)
-);
+router.put("/reset-password", errorHandler(AuthController.resetPassword));
 
 module.exports = router;
