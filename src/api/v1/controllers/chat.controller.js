@@ -8,7 +8,10 @@ const {
   NotFoundError,
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
-const { OK, CreatedResponse } = require("../../../classes/success/SuccessResponse");
+const {
+  OK,
+  CreatedResponse,
+} = require("../../../classes/success/SuccessResponse");
 
 const ChatService = require("../services/chat.service");
 

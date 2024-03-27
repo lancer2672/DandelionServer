@@ -1,12 +1,10 @@
 const redis = require("redis");
 const config = require("../../config/appConfig");
-const { REDIS_CONNECTION_STATUS } = require("../../constant");
+const { REDIS_CONNECTION_STATUS, DEFAULT_CLIENT } = require("../../constant");
 
 const DEFAULT_CLIENT_CONFIG = {
   url: config.redis.url,
 };
-const DEFAULT_CLIENT = "default";
-
 const handleConnectionTimeout = () => {};
 const redisClientListener = async (clientName = "", redisClient) => {
   await redisClient

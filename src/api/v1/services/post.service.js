@@ -4,30 +4,85 @@ const {
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
 const S3ClientIns = require("../../../external/s3Client");
+const redisClientInstance = require("../../../external/redis");
+const { DEFAULT_CLIENT } = require("../../../constant");
 
 class PostService {
-  static async getAllPosts() {
-    const posts = await Post.find({}).sort({ createdAt: -1 });
-    if (!posts) {
-      throw new NotFoundError("Posts not found");
-    }
-    return posts;
+  static async getAllPosts(limit, skip) {
+    return new Promise((resolve, reject) => {
+      redisClientInstance
+        .getClient(DEFAULT_CLIENT)
+        .get(`allPosts:${skip}:${limit}`, async (err, postData) => {
+          if (postData) {
+            resolve(JSON.parse(postData));
+          } else {
+            const posts = await Post.find({})
+              .sort({ createdAt: -1 })
+              .skip(skip)
+              .limit(limit);
+            if (!posts) {
+              reject(new NotFoundError("Posts not found"));
+            } else {
+              redisClientInstance
+                .getClient(DEFAULT_CLIENT)
+                .set(`allPosts:${skip}:${limit}`, JSON.stringify(posts));
+              resolve(posts);
+            }
+          }
+        });
+    });
   }
 
-  static async getPostByUserId(userId) {
-    const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
-    if (!posts) {
-      throw new NotFoundError("Posts not found for the specified user");
-    }
-    return posts;
+  static async getPostByUserId(userId, limit, skip) {
+    return new Promise((resolve, reject) => {
+      redisClientInstance
+        .getClient(DEFAULT_CLIENT)
+        .get(`userPosts:${userId}:${skip}:${limit}`, async (err, postData) => {
+          if (postData) {
+            resolve(JSON.parse(postData));
+          } else {
+            const posts = await Post.find({ user: userId })
+              .sort({ createdAt: -1 })
+              .skip(skip)
+              .limit(limit);
+            if (!posts) {
+              reject(
+                new NotFoundError("Posts not found for the specified user")
+              );
+            } else {
+              redisClientInstance
+                .getClient(DEFAULT_CLIENT)
+                .set(
+                  `userPosts:${userId}:${skip}:${limit}`,
+                  JSON.stringify(posts)
+                );
+              resolve(posts);
+            }
+          }
+        });
+    });
   }
 
   static async getPostById(postId) {
-    const post = await Post.findById(postId);
-    if (!post) {
-      throw new NotFoundError("Post not found");
-    }
-    return post;
+    return new Promise((resolve, reject) => {
+      redisClientInstance
+        .getClient(DEFAULT_CLIENT)
+        .get(`post:${postId}`, async (err, postData) => {
+          if (postData) {
+            resolve(JSON.parse(postData));
+          } else {
+            const post = await Post.findById(postId);
+            if (!post) {
+              reject(new NotFoundError("Post not found"));
+            } else {
+              redisClientInstance
+                .getClient(DEFAULT_CLIENT)
+                .set(`post:${postId}`, JSON.stringify(post));
+              resolve(post);
+            }
+          }
+        });
+    });
   }
 
   static async handleReactPost(userId, postId) {
@@ -66,8 +121,8 @@ class PostService {
     return post;
   }
 
-  static async handleUpdatePost({id, payload}) {
-    const updatedPost = {}
+  static async handleUpdatePost({ id, payload }) {
+    const updatedPost = {};
     const { description, image } = payload;
     if (description) {
       updatedPost.description = description;
@@ -75,7 +130,7 @@ class PostService {
     if (image) {
       updatedPost.image = image;
     }
-    let post = await Post.findByIdAndUpdate(id,updatedPost , {
+    let post = await Post.findByIdAndUpdate(id, updatedPost, {
       new: true,
     });
     if (!post) {
@@ -92,7 +147,7 @@ class PostService {
     await Post.deleteOne({ _id: postId });
   }
 
-  static async handleCreatePost({userId, payload}) {
+  static async handleCreatePost({ userId, payload }) {
     const { description, image } = payload;
     const postData = {
       description: description || " ",
