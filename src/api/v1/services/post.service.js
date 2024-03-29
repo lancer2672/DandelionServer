@@ -4,88 +4,24 @@ const {
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
 const S3ClientIns = require("../../../external/s3Client");
-const redisClientInstance = require("../../../external/redis");
-const { DEFAULT_CLIENT } = require("../../../constant");
 
 class PostService {
-  static async getAllPosts(limit, skip) {
-    return new Promise((resolve, reject) => {
-      redisClientInstance
-        .getClient(DEFAULT_CLIENT)
-        .get(`allPosts:${skip}:${limit}`, async (err, postData) => {
-          if (postData) {
-            resolve(JSON.parse(postData));
-          } else {
-            const posts = await Post.find({})
-              .sort({ createdAt: -1 })
-              .skip(skip)
-              .limit(limit);
-            if (!posts) {
-              reject(new NotFoundError("Posts not found"));
-            } else {
-              redisClientInstance
-                .getClient(DEFAULT_CLIENT)
-                .set(`allPosts:${skip}:${limit}`, JSON.stringify(posts));
-              resolve(posts);
-            }
-          }
-        });
-    });
+  static async getAllPosts(limit = 10, skip = 0) {
+    return await Post.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit);
   }
 
-  static async getPostByUserId(userId, limit, skip) {
-    return new Promise((resolve, reject) => {
-      redisClientInstance
-        .getClient(DEFAULT_CLIENT)
-        .get(`userPosts:${userId}:${skip}:${limit}`, async (err, postData) => {
-          if (postData) {
-            resolve(JSON.parse(postData));
-          } else {
-            const posts = await Post.find({ user: userId })
-              .sort({ createdAt: -1 })
-              .skip(skip)
-              .limit(limit);
-            if (!posts) {
-              reject(
-                new NotFoundError("Posts not found for the specified user")
-              );
-            } else {
-              redisClientInstance
-                .getClient(DEFAULT_CLIENT)
-                .set(
-                  `userPosts:${userId}:${skip}:${limit}`,
-                  JSON.stringify(posts)
-                );
-              resolve(posts);
-            }
-          }
-        });
-    });
+  static async getPostByUserId(userId, limit = 10, skip = 0) {
+    return await Post.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
   }
 
   static async getPostById(postId) {
-    return new Promise((resolve, reject) => {
-      redisClientInstance
-        .getClient(DEFAULT_CLIENT)
-        .get(`post:${postId}`, async (err, postData) => {
-          if (postData) {
-            resolve(JSON.parse(postData));
-          } else {
-            const post = await Post.findById(postId);
-            if (!post) {
-              reject(new NotFoundError("Post not found"));
-            } else {
-              redisClientInstance
-                .getClient(DEFAULT_CLIENT)
-                .set(`post:${postId}`, JSON.stringify(post));
-              resolve(post);
-            }
-          }
-        });
-    });
+    return await Post.findById(postId);
   }
-
   static async handleReactPost(userId, postId) {
+    console.log("handleReactPost");
     const post = await Post.findById(postId);
     if (!post) {
       throw new NotFoundError("Post not found");
@@ -98,6 +34,7 @@ class PostService {
     }
     await post.save();
   }
+
   static async handleDeleteComment(postId, commentId) {
     const post = await Post.findById(postId);
     if (!post) {
@@ -108,7 +45,6 @@ class PostService {
     );
     post.comments = newComments;
     await post.save();
-    return post.comments;
   }
 
   static async handleCommentPost(postId, newComment) {
@@ -118,7 +54,6 @@ class PostService {
     }
     post.comments.push(newComment);
     await post.save();
-    return post;
   }
 
   static async handleUpdatePost({ id, payload }) {
@@ -138,7 +73,6 @@ class PostService {
     }
     return post;
   }
-
   static async handleDeletePost(postId) {
     const post = await Post.findById(postId);
     if (!post) {
@@ -156,6 +90,7 @@ class PostService {
     };
     const newPost = new Post(postData);
     const savedPost = await newPost.save();
+
     return savedPost;
   }
   static async updateUrl({ postId, fileId }) {
@@ -164,6 +99,7 @@ class PostService {
     if (!post) {
       throw new NotFoundError("Post not found");
     }
+
     post.image.url = newUrl;
     await post.save();
     return { url: newUrl };

@@ -18,7 +18,7 @@ const router = express.Router();
  *       200:
  *         description: All posts retrieved successfully
  */
-router.get("/all",  errorHandler(PostController.getAllPosts));
+router.get("/list", errorHandler(PostController.getAllPosts));
 
 /**
  * @swagger
@@ -31,7 +31,7 @@ router.get("/all",  errorHandler(PostController.getAllPosts));
  */
 router.get(
   "/:userId",
-  
+
   errorHandler(PostController.getPostByUserId)
 );
 
@@ -44,9 +44,7 @@ router.get(
  *       200:
  *         description: Post by ID retrieved successfully
  */
-router.get("/",  errorHandler(PostController.getPostById));
-
-
+router.get("/", errorHandler(PostController.getPostById));
 
 /**
  * @swagger
@@ -59,7 +57,7 @@ router.get("/",  errorHandler(PostController.getPostById));
  */
 router.patch(
   "/:id",
-  
+
   //TODO
   errorHandler(PostController.handleUpdatePost)
 );
@@ -75,7 +73,7 @@ router.patch(
  */
 router.delete(
   "/:id",
-  
+
   errorHandler(PostController.handleDeletePost)
 );
 
@@ -90,7 +88,7 @@ router.delete(
  */
 router.post(
   "/create",
-  
+
   //TODO
   errorHandler(PostController.handleCreatePost)
 );

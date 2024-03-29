@@ -8,17 +8,22 @@ const {
   NotFoundError,
   InternalServerError,
 } = require("../../../classes/error/ErrorResponse");
-const { OK, CreatedResponse } = require("../../../classes/success/SuccessResponse");
+const {
+  OK,
+  CreatedResponse,
+} = require("../../../classes/success/SuccessResponse");
 const PostService = require("../services/post.service");
 
 exports.getAllPosts = async (req, res) => {
   try {
-    const posts = await PostService.getAllPosts();
+    const { skip, limit } = req.query;
+    const posts = await PostService.getAllPosts(limit, skip);
     new OK({
       message: "Get all posts success",
       data: { posts },
     }).send(res);
   } catch (err) {
+    console.log("ERROR", err);
     throw new InternalServerError();
   }
 };
@@ -26,7 +31,8 @@ exports.getAllPosts = async (req, res) => {
 exports.getPostByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const posts = await PostService.getPostByUserId(userId);
+    const { skip, limit } = req.query;
+    const posts = await PostService.getPostByUserId(userId, limit, skip);
 
     if (posts.length === 0) {
       throw new NotFoundError("No post found for the specified user");
@@ -39,7 +45,6 @@ exports.getPostByUserId = async (req, res) => {
     throw new InternalServerError();
   }
 };
-
 exports.getPostById = async (req, res) => {
   try {
     const { postId } = req.query;
@@ -57,10 +62,9 @@ exports.getPostById = async (req, res) => {
   }
 };
 
-
 exports.handleUpdatePost = async (req, res) => {
-  const {id} = req.params
-  const post = await PostService.handleUpdatePost({id,payload:req.body});
+  const { id } = req.params;
+  const post = await PostService.handleUpdatePost({ id, payload: req.body });
   new OK({
     message: "Success",
     data: { updatedPost: post },
@@ -76,8 +80,10 @@ exports.handleDeletePost = async (req, res) => {
 };
 
 exports.handleCreatePost = async (req, res) => {
- 
-  const savedPost = await PostService.handleCreatePost({userId:req.userId,payload:req.body});
+  const savedPost = await PostService.handleCreatePost({
+    userId: req.userId,
+    payload: req.body,
+  });
   new OK({
     message: "Success",
     data: { newPost: savedPost },
