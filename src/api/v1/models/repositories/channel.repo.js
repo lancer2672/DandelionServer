@@ -17,19 +17,32 @@ class ChannelRepository {
       .select(getSelectData(select))
       .exec();
   }
-  static async updateChannel(channelId, updateData) {
+  static async updateChannel(channelId, updateData, session = null) {
     return await Channel.findByIdAndUpdate(channelId, updateData, {
       new: true,
-    }).exec();
+    })
+      .session(session)
+      .exec();
   }
-  static async findOneChannel(query) {
-    return await Channel.findOne(query).exec();
+  static async updateChannelWithSession(channelId, updateData, session) {
+    return await Channel.findByIdAndUpdate(channelId, updateData, {
+      new: true,
+    })
+      .session(session)
+      .exec();
+  }
+  static async findChannel(query, session = null) {
+    return await Channel.findOne(query).session(session).exec();
   }
   static async createChannel(channelData) {
     const channel = new Channel(channelData);
     return await channel.save();
   }
-  static async findOrCreateChannel(channelName = "", memberIds) {
+  static async findOrCreateChannel(
+    channelName = "",
+    memberIds,
+    session = null
+  ) {
     let channel = await Channel.findOne({ memberIds: { $all: memberIds } });
     if (!channel) {
       channel = new Channel({
@@ -37,10 +50,10 @@ class ChannelRepository {
         memberIds,
         channelMessages: [],
       });
-      await channel.save();
+      await channel.save({ session });
     } else {
       channel.isInWaitingList = true;
-      await channel.save();
+      await channel.save({ session });
     }
     return channel;
   }

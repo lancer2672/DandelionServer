@@ -1,12 +1,12 @@
 const User = require("../user.model");
 
 class UserRepository {
-  static async findById(userId) {
-    return await User.findById(userId).exec();
+  static async findById(userId, session = null) {
+    return await User.findById(userId).session(session).exec();
   }
-  static async findOne(query) {
+  static async findOne(query, session) {
     console.log("UserRepository", User);
-    return await User.findOne(query).exec();
+    return await User.findOne(query).session(session).exec();
   }
   static async findAll() {
     return await User.find().exec();
@@ -17,11 +17,13 @@ class UserRepository {
     return await user.save();
   }
 
-  static async update(userId, updateData) {
+  static async update(userId, updateData, session = null) {
     console.log("update", { userId, updateData });
     return await User.findByIdAndUpdate(userId, updateData, {
       new: true,
-    }).exec();
+    })
+      .session(session)
+      .exec();
   }
 }
 
