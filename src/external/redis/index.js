@@ -4,8 +4,8 @@ const { REDIS_CONNECTION_STATUS, DEFAULT_CLIENT } = require("../../constant");
 
 const DEFAULT_CLIENT_CONFIG = {
   url: config.redis.url,
-  username: "default",
-  password: "ZEX02U1NMRK7ZbpOMXv75nFBICsiDY8E",
+  username: config.redis.username,
+  password: config.redis.password,
 };
 const ONE_HOUR = 60 * 60;
 const handleConnectionTimeout = () => {};
@@ -41,15 +41,21 @@ class RedisClient {
     return this.clients[name];
   }
 
-  async getDataFromCacheOrDB(cacheKey, dbQuery, redisClient = DEFAULT_CLIENT) {
+  async getDataFromCacheOrDB(cacheKey, dbQuery, options = {}) {
     try {
+      const { redisClient = DEFAULT_CLIENT, cacheTime = ONE_HOUR } = options;
       const client = this.getClient(redisClient);
       const data = await client.get(cacheKey);
       if (data) {
-        return JSON.parse(data);
+        return { ...JSON.parse(data), isFromCache: true };
       } else {
         const result = await dbQuery();
-        client.set(cacheKey, JSON.stringify(result), "EX", ONE_HOUR);
+        if (
+          !Array.isArray(result) ||
+          (Array.isArray(result) && result.length !== 0)
+        ) {
+          client.set(cacheKey, JSON.stringify(result), "EX", cacheTime);
+        }
         return result;
       }
     } catch (error) {
@@ -59,6 +65,7 @@ class RedisClient {
   async deleteCacheByKey(cacheKey, redisClient) {
     const client = this.getClient(redisClient);
     try {
+      console.log("delete cache", cacheKey);
       const response = await client.del(cacheKey);
       return response;
     } catch (err) {
