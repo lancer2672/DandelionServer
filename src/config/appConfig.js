@@ -10,6 +10,8 @@ const config = {
   },
   redis: {
     url: process.env.REDIS_URL,
+    username: process.env.REDIS_USERNAME,
+    password: process.env.REDIS_PASSWORD,
   },
   rabbitMQ: {
     url: process.env.RABBIT_URL,
