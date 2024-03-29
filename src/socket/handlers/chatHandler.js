@@ -18,49 +18,12 @@ const emitMessage = (channelId, newMess, type) => {
   socketIO.to(channelId).emit("receive-message", { newMess, channelId, type });
 };
 const getChannelMembers = async (userId, channelId) => {
-  const channel = await ChannelRepository.findChannels({
-    query: { _id: channelId },
-  });
+  const channel = await ChannelRepository.findChannel({ _id: channelId });
   const receiverId = channel.memberIds.find((memberId) => memberId != userId);
-  const receiver = await UserRepository.findUsers({
-    query: { _id: receiverId },
-  });
-  const sender = await UserRepository.findUsers({ query: { _id: userId } });
+  const receiver = await UserRepository.findById(receiverId);
+  const sender = await UserRepository.findById(userId);
   return { receiver, sender };
 };
-// const sendNotification = async ({ receiver, sender, channelId, message }) => {
-//   const channel = await ChannelRepository.findChannels({
-//     query: { _id: channelId },
-//   });
-//   console.log("SENDER", receiver.FCMtoken);
-
-//   const notificationData = {
-//     tokens: [receiver.FCMtoken],
-//     type: NotificationType.CHAT,
-//     messageData: {
-//       message,
-//       notificationId: channelId,
-//       memberIds: JSON.stringify(channel.memberIds),
-//       avatar: sender.avatar.url || "",
-//       nickname: sender.nickname,
-//     },
-//   };
-//   await NotificationService.sendNotification(notificationData);
-// };
-// const getNotificationContentByMsgType = (type, sender, messageObj) => {
-//   switch (type) {
-//     case MESSAGE_TYPE.TEXT:
-//       return messageObj.attrs.message;
-//     case MESSAGE_TYPE.IMAGE:
-//       return `${sender.nickname} đã gửi cho bạn ảnh`;
-//     case MESSAGE_TYPE.VIDEO:
-//       return `${sender.nickname} đã gửi cho bạn video`;
-//     case MESSAGE_TYPE.CALL_HISTORY:
-//       return `đã bỏ lỡ cuộc gọi từ ${sender.nickname}`;
-//     default:
-//       return "";
-//   }
-// };
 const createMessage = async function (data) {
   const { channelId, type } = data;
   console.log("createMessage", data);
@@ -111,18 +74,18 @@ const handleSetSeenMessages = async function ({ channelId }) {
 const handleIncomingMessage = async function (data) {
   try {
     const { channelId, type: messageType, attrs } = data;
-
-    // const channel = await ChannelRepository.findChannels({
-    //   query: { _id: channelId },
-    // });
-    // const userId = this.handshake.query.userId;
-    // const newMessage = await createMessage(data);
-    // emitMessage(channelId, newMessage, messageType);
-    // const { receiver, sender } = await getChannelMembers(userId, channelId);
-    // console.log("newMessage", newMessage);
+    console.log("DÂT", data);
+    const channel = await ChannelRepository.findChannels({
+      query: { _id: channelId },
+    });
+    const userId = this.handshake.query.userId;
+    const newMessage = await createMessage(data);
+    emitMessage(channelId, newMessage, messageType);
+    const { receiver, sender } = await getChannelMembers(userId, channelId);
+    console.log("newMessage", newMessage);
     const notificationDescription =
       MessageClass.getNotificationContentByMsgType(messageType)(
-        "sender.nickname",
+        sender.nickname,
         attrs.message || ""
       );
 
@@ -130,16 +93,14 @@ const handleIncomingMessage = async function (data) {
       NOTIFICATION_TYPE.CHAT,
       {
         description: notificationDescription,
-        receiverId: 123,
-        senderId: 321,
-        // receiverId: receiver._id,
-        // senderId: sender._id,
+        receiverId: receiver._id,
+        senderId: sender._id,
         payload: {
           message: "message",
           notificationId: channelId,
-          // memberIds: JSON.stringify(channel.memberIds),
-          // avatar: sender.avatar.url || "",
-          // nickname: sender.nickname,
+          memberIds: JSON.stringify(channel.memberIds),
+          avatar: sender.avatar.url || "",
+          nickname: sender.nickname,
         },
       }
     );

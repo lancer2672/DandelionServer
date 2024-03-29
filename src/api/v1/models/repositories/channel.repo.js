@@ -1,7 +1,7 @@
 const { getSelectData } = require("../../../../utils");
 const Channel = require("../channel.model");
 class ChannelRepository {
-  static async findChannels({ query, limit, skip, select }) {
+  static async findChannels({ query, limit = 10, skip = 0, select }) {
     return await Channel.find(query)
       .sort({ updatedAt: -1 })
       .skip(skip)
@@ -9,7 +9,7 @@ class ChannelRepository {
       .select(getSelectData(select))
       .exec();
   }
-  static async findMemberInChannel({ query, limit, skip, select }) {
+  static async findMemberInChannel({ query, limit = 10, skip = 0, select }) {
     return await Channel.find(query)
       .sort({ updatedAt: -1 })
       .skip(skip)

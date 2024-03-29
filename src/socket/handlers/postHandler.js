@@ -85,7 +85,9 @@ const handleUploadComment = async function (data) {
         reactor: commentUser,
         postId,
         //use nickname seperately
-        notificationMessage: config.language.COMMENT_POST("").text,
+        notificationMessage: config.language.COMMENT_POST.text(
+          postCreator.nickname
+        ),
       });
     }
   } catch (er) {
@@ -96,30 +98,23 @@ const handleReactPost = async function (data) {
   try {
     const socketIO = Global.socketIO;
     const reactUserId = this.handshake.query.userId;
-    const { postCreatorId, postId, addToList } = data;
+    const { postCreatorId, postId } = data;
     const postCreatorSocketId = Global.onlineUsers[postCreatorId]?.socketId;
     const post = await Post.findById(postId);
     const postCreator = await User.findById(postCreatorId).select("-password");
     const reactUser = await User.findById(reactUserId);
 
     let userIndex = post.likes.findIndex((item) => item.userId == reactUserId);
+    let isAddedToList;
 
-    if (addToList) {
-      if (userIndex === -1) {
-        post.likes.push({ userId: reactUserId });
-      }
+    if (userIndex === -1) {
+      post.likes.push({ userId: reactUserId });
+      isAddedToList = true;
     } else {
-      userIndex === -1
-        ? post.likes.push({ userId: reactUserId })
-        : post.likes.splice(userIndex, 1);
+      post.likes.splice(userIndex, 1);
+      isAddedToList = false;
     }
 
-    let isAddedToList = userIndex === -1;
-    if (addToList === true) {
-    }
-    if (userIndex !== -1 && addToList === true) {
-      isAddedToList = null;
-    }
     console.log("react-post", userIndex, isAddedToList);
 
     await Post.updateOne({ _id: postId }, { likes: post.likes });
@@ -132,7 +127,9 @@ const handleReactPost = async function (data) {
         postCreator,
         reactor: reactUser,
         postId,
-        notificationMessage: config.language.REACT_POST("").text,
+        notificationMessage: config.language.REACT_POST.text(
+          postCreator.nickname
+        ),
       });
     }
   } catch (er) {

@@ -9,16 +9,18 @@ const {
 const Global = require("../global");
 const ChannelRepository = require("../../api/v1/models/repositories/channel.repo");
 const UserRepository = require("../../api/v1/models/repositories/user.repo");
+const FriendRequestRepository = require("../../api/v1/models/repositories/friendrequest.repo");
 const { FRIEND_REQUEST_STATUS, NOTIFICATION_TYPE } = require("../../constant");
 const notificationServiceIns = require("../../services/notification");
 const {
   NotificationFactory,
 } = require("../../classes/factory/NotificationFactory");
 const config = require("../../config/appConfig");
+const { default: mongoose } = require("mongoose");
 
-const addFriendToFriendList = async (userIdA, userIdB) => {
+const addFriendToFriendList = async (userIdA, userIdB, session) => {
   try {
-    const userA = await UserRepository.findOne({ _id: userIdA });
+    const userA = await UserRepository.findOne({ _id: userIdA }, session);
     console.log("userA", userA);
     const checkIfFriend = userA.friends.some(
       (friend) => friend.userId.toString() === userIdB.toString()
@@ -28,10 +30,11 @@ const addFriendToFriendList = async (userIdA, userIdB) => {
         userId: userIdB,
         createdAt: new Date().toISOString(),
       });
-      await UserRepository.update({ _id: userIdA }, userA);
+      await UserRepository.update({ _id: userIdA }, userA, session);
     }
   } catch (er) {
     console.log(er);
+    throw er;
   }
 };
 const findExistedPendingFriendRequest = async (senderId, receiverId) => {
@@ -41,29 +44,32 @@ const findExistedPendingFriendRequest = async (senderId, receiverId) => {
     status: FRIEND_REQUEST_STATUS.PENDING,
   });
 };
-const acceptFriendRequest = async (request) => {
+const acceptFriendRequest = async (request, session) => {
   try {
     await FriendRequestRepository.updateFriendRequestStatus(
       request,
-      "accepted"
+      "accepted",
+      session
     );
     const channel = await ChannelRepository.findOrCreateChannel(
       "New Chat Room",
-      [request.sender, request.receiver]
+      [request.sender, request.receiver],
+      session
     );
     channel.isInWaitingList = false;
-    await ChannelRepository.updateChannel(channel._id, channel);
+    await ChannelRepository.updateChannel(channel._id, channel, session);
     return channel;
   } catch (er) {
     console.log(er);
+    throw er;
   }
 };
-const handleAcceptFriendRequest = async (request) => {
+const handleAcceptFriendRequest = async (request, session) => {
   const socketIO = Global.socketIO;
   const onlineUsers = Global.onlineUsers;
   const senderSocketId = onlineUsers[request.sender.toString()]?.socketId;
   const receiverSocketId = onlineUsers[request.receiver.toString()]?.socketId;
-  const newChannel = await acceptFriendRequest(request);
+  const newChannel = await acceptFriendRequest(request, session);
 
   socketIO.to(senderSocketId).emit("new-channel", newChannel);
   socketIO.to(receiverSocketId).emit("new-channel", newChannel);
@@ -77,7 +83,12 @@ const handleAcceptFriendRequest = async (request) => {
   socketIO.to(receiverSocketId).emit("response-friendRequest", responseData);
 };
 
-const sendNotificationFriendRequest = async ({ sender, payload, receiver }) => {
+const sendNotificationFriendRequest = async ({
+  sender,
+  payload,
+  receiver,
+  description,
+}) => {
   const notification = NotificationFactory.createNotification(
     NOTIFICATION_TYPE.FRIEND_REQUEST,
     {
@@ -96,37 +107,41 @@ const unFriend = async (data) => {
   const friendSocketId = Global.onlineUsers[data.friendId]?.socketId;
 
   console.log({ userId, friendId, userSocketId, friendSocketId });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    const user = await UserRepository.findById(userId);
-    const friend = await UserRepository.findById(friendId);
+    const user = await UserRepository.findById(userId, session);
+    const friend = await UserRepository.findById(friendId, session);
     if (!user || !friend) {
       console.log("friend or user not exist");
     }
-    // Remove friend from user's friends list
     user.friends = user.friends.filter(
       (friend) => friend.userId.toString() !== friendId
     );
-    await UserRepository.update({ _id: userId }, user);
+    await UserRepository.update({ _id: userId }, user, session);
 
-    // Remove user from friend's friends list
     friend.friends = friend.friends.filter(
       (friend) => friend.userId.toString() !== userId
     );
-    await UserRepository.update({ _id: friendId }, friend);
+    await UserRepository.update({ _id: friendId }, friend, session);
 
-    // Find the channel between the two users and set isInWaitingList to true
-    const channel = await ChannelRepository.findOneChannel({
+    const channel = await ChannelRepository.findChannel({
       memberIds: { $all: [userId, friendId] },
+      session,
     });
     if (channel) {
       channel.isInWaitingList = true;
-      await ChannelRepository.updateChannel(channel._id, channel);
+      await ChannelRepository.updateChannel(channel._id, channel, session);
     }
     socketIO.to(userSocketId).emit("unfriend", friendId);
     socketIO.to(friendSocketId).emit("unfriend", userId);
+    await session.commitTransaction();
   } catch (err) {
+    await session.abortTransaction();
     console.error(err);
+  } finally {
+    session.endSession();
   }
 };
 
@@ -136,10 +151,13 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
   const onlineUsers = Global.onlineUsers;
   const senderSocketId = onlineUsers[senderId]?.socketId;
   const receiverSocketId = onlineUsers[receiverId]?.socketId;
-  try {
-    const sender = await UserRepository.findById(senderId);
-    const receiver = await UserRepository.findById(receiverId);
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const sender = await UserRepository.findById(senderId, session);
+    const receiver = await UserRepository.findById(receiverId, session);
+    console.log("HANDLEREQUEST");
     const isAlreadyFriend = sender.friends.some(
       (friend) => friend.userId == receiverId
     );
@@ -160,14 +178,18 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
     );
     //if existed then accept the request
     if (existedRequestBtoA) {
-      await addFriendToFriendList(senderId, receiverId);
-      await addFriendToFriendList(receiverId, senderId);
-      await handleAcceptFriendRequest(existedRequestBtoA);
+      await addFriendToFriendList(senderId, receiverId, session);
+      await addFriendToFriendList(receiverId, senderId, session);
+      await handleAcceptFriendRequest(existedRequestBtoA, session);
 
-      const description = config.language.ACCEPT_FRIEND_REQUEST(
+      console.log(
+        "DESCIPRTION",
+        config.language.ACCEPT_FRIEND_REQUEST.text(sender.nickname)
+      );
+      const description = config.language.ACCEPT_FRIEND_REQUEST.text(
         sender.nickname
-      ).text;
-
+      );
+      // throw new Error("This is a simulated error for testing purposes.");
       await sendNotificationFriendRequest({
         sender,
         receiver,
@@ -185,15 +207,15 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
         receiver: receiverId,
         status: FRIEND_REQUEST_STATUS.PENDING,
       });
-      await newRequest.save();
+      await newRequest.save({ session });
       socketIO.to(senderSocketId).emit("send-friendRequest", "sentRequest");
       socketIO.to(receiverSocketId).emit("send-friendRequest", "accept");
 
       socketIO.to(receiverSocketId).emit("new-notification");
 
-      const description = config.language.SENT_FRIEND_REQUEST(
+      const description = config.language.SENT_FRIEND_REQUEST.text(
         sender.nickname
-      ).text;
+      );
 
       await sendNotificationFriendRequest({
         sender,
@@ -204,22 +226,16 @@ const handleFriendRequest = async ({ senderId, receiverId }) => {
           avatar: sender.avatar.url,
           message: description,
         },
+        description,
       });
-
-      // await NotificationService.sendNotification({
-      //   tokens: [receiver.FCMtoken],
-      //   messageData: {
-      //     notificationId: newRequest._id,
-      //     nickname: `${sender.nickname}`,
-      //     avatar: sender.avatar.url,
-      //     message: `${sender.nickname} sent you a friend request`,
-      //   },
-      //   type: NotificationType.FRIEND_REQUEST,
-      // });
       console.log("Created friend request");
     }
-  } catch (er) {
-    console.log(er);
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("The transaction was aborted due to an error: " + error);
+  } finally {
+    session.endSession();
   }
 };
 

@@ -51,8 +51,8 @@ class ChatService {
         query: {
           channelId,
         },
-        skip,
         limit,
+        skip,
       });
     });
   }

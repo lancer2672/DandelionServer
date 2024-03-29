@@ -4,7 +4,7 @@ class UserRepository {
   static async findById(userId, session = null) {
     return await User.findById(userId).session(session).exec();
   }
-  static async findOne(query, session) {
+  static async findOne(query, session = null) {
     console.log("UserRepository", User);
     return await User.findOne(query).session(session).exec();
   }
