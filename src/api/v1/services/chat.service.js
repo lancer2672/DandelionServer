@@ -17,6 +17,8 @@ const S3ClientIns = require("../../../external/s3Client");
 const MessageRepository = require("../models/repositories/message.repo");
 const ChannelRepository = require("../models/repositories/channel.repo");
 const redisClientInstance = require("../../../external/redis");
+const { REDIS_KEY_TYPE } = require("../../../constant");
+const { mapRedisKey } = require("../../../utils");
 
 class ChatService {
   static async getChannels({ userId, skip = 0, limit = 20 }) {
@@ -45,18 +47,22 @@ class ChatService {
     return members;
   }
   static async getChannelMessages(channelId, limit, skip) {
-    const cacheKey = `channel-${channelId}-message-${limit}-${skip}`;
-    return redisClientInstance.getDataFromCacheOrDB(cacheKey, async () => {
-      return await MessageRepository.getUserMessage({
-        query: {
-          channelId,
-        },
-        limit,
-        skip,
-      });
-    });
+    const cacheKey = mapRedisKey(REDIS_KEY_TYPE.MESSAGE, channelId);
+    return redisClientInstance.getDataFromCacheOrDB(
+      cacheKey,
+      async () => {
+        return await MessageRepository.getUserMessage({
+          query: {
+            channelId,
+          },
+          limit,
+          skip,
+        });
+      },
+      skip,
+      limit
+    );
   }
-
   static async getLastMessage(channelId) {
     const lastMessage = await Message.findOne({
       channelId: channelId,

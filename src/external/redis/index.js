@@ -31,7 +31,6 @@ class RedisClient {
     this.clients[name] = redis.createClient(options);
     return redisClientListener(name, this.clients[name]);
   }
-
   setWithExpiration(clientName, key, value, expirationInSeconds) {
     const client = this.getClient(clientName);
     client.set(key, value, "EX", expirationInSeconds);
@@ -41,20 +40,33 @@ class RedisClient {
     return this.clients[name];
   }
 
-  async getDataFromCacheOrDB(cacheKey, dbQuery, options = {}) {
+  async getDataFromCacheOrDB(cacheKey, dbQuery, start, stop, options = {}) {
     try {
       const { redisClient = DEFAULT_CLIENT, cacheTime = ONE_HOUR } = options;
       const client = this.getClient(redisClient);
-      const data = await client.get(cacheKey);
-      if (data) {
-        return { ...JSON.parse(data), isFromCache: true };
+
+      let data = [];
+      //just want to retrive from "start < stop" not "start <=stop"
+      if (stop > 0) {
+        data = await client.ZRANGE(cacheKey, start, stop - 1, { REV: true });
+      }
+      if (data.length > 0) {
+        console.log("DATAFROMCACHE", data.length);
+        return data.map((item) => JSON.parse(item));
       } else {
         const result = await dbQuery();
-        if (
-          !Array.isArray(result) ||
-          (Array.isArray(result) && result.length !== 0)
-        ) {
-          client.set(cacheKey, JSON.stringify(result), "EX", cacheTime);
+
+        if (Array.isArray(result) && result.length !== 0) {
+          const multi = client.multi();
+          result.forEach((item, index) => {
+            const score = new Date(item.createdAt).getTime();
+            multi.ZADD(cacheKey, {
+              score: score,
+              value: JSON.stringify(item),
+            });
+          });
+          multi.expire(cacheKey, cacheTime);
+          await multi.exec();
         }
         return result;
       }
@@ -62,7 +74,8 @@ class RedisClient {
       throw error;
     }
   }
-  async deleteCacheByKey(cacheKey, redisClient) {
+  async deleteCacheByKey(cacheKey, options = {}) {
+    const { redisClient = DEFAULT_CLIENT } = options;
     const client = this.getClient(redisClient);
     try {
       console.log("delete cache", cacheKey);
@@ -71,6 +84,21 @@ class RedisClient {
     } catch (err) {
       throw err;
     }
+  }
+  async deleteCacheByKeyMatchPattern(cacheKey, options = {}) {
+    const { redisClient = DEFAULT_CLIENT } = options;
+
+    let cursor = "0";
+    let keysToDelete = [];
+    const client = this.clients[redisClient];
+    do {
+      const result = await redis.scanAsync(cursor, "MATCH", cacheKey);
+      console.log("Result", result);
+      // keysToDelete = keysToDelete.concat(foundKeys);
+      // cursor = newCursor;
+    } while (cursor !== "0");
+    const deletedCount = await client.del(...keysToDelete);
+    console.log(`Deleted ${deletedCount} keys.`);
   }
 }
 

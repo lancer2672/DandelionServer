@@ -44,7 +44,7 @@ exports.GetChannelMember = async (req, res) => {
 
 exports.getChannelMessages = async (req, res) => {
   try {
-    const { limit, skip = 0 } = req.query;
+    const { limit = 10, skip = 0 } = req.query;
     const messages = await ChatService.getChannelMessages(
       req.params.channelId,
       limit,
