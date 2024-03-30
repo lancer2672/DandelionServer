@@ -10,8 +10,8 @@ class MessageFactory {
     MessageFactory.messageRegistry[type] = classRef;
   };
   static async createMessage(type, payload) {
-    const messageClass = new this.messageRegistry[type]();
-    return new messageClass(payload).createMessage();
+    const messageClass = new this.messageRegistry[type](payload);
+    return await messageClass.createMessage();
   }
 }
 
@@ -34,13 +34,13 @@ class MessageClass {
         return (senderName, message) => message;
       case MESSAGE_TYPE.IMAGE:
         return (senderName, message) =>
-          config.language.SENT_PHOTO(senderName).text;
+          config.language.SENT_PHOTO.text(senderName);
       case MESSAGE_TYPE.VIDEO:
         return (senderName, message) =>
-          config.language.SENT_VIDEO(senderName).text;
+          config.language.SENT_VIDEO.text(senderName);
       case MESSAGE_TYPE.CALL_HISTORY:
         return (senderName, message) =>
-          config.language.MISS_CALL(senderName).text;
+          config.language.MISS_CALL.text(senderName);
       default:
         return "";
     }
