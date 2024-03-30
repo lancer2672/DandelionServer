@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const { REDIS_KEY_TYPE } = require("../constant");
 
 const getInfoData = ({ fields = [], object = {} }) => {
   return _.pick(object, fields);
@@ -11,8 +12,18 @@ const getSelectData = (select = []) => {
 const excludeSelectData = (select = []) => {
   return Object.fromEntries(select.map((t) => [t, 0]));
 };
+
+const mapRedisKey = (type, keyValue) => {
+  switch (type) {
+    case REDIS_KEY_TYPE.MESSAGE:
+      return `channel:${keyValue}:messages`;
+    default:
+      return null;
+  }
+};
 module.exports = {
   getInfoData,
   getSelectData,
   excludeSelectData,
+  mapRedisKey,
 };

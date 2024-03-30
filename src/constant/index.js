@@ -42,6 +42,11 @@ const RABBIT_MQ_CONFIG = {
   NOTI_QUEUE_NAME: "notification-queue",
   NOTIFICATION_ROUTING_KEY: "notification-rkey",
 };
+const DEFAULT_CLIENT = "default";
+
+const REDIS_KEY_TYPE = {
+  MESSAGE: "message",
+};
 module.exports = {
   HEADER,
   REDIS_CONNECTION_TIMEOUT,
@@ -50,4 +55,6 @@ module.exports = {
   REDIS_CONNECTION_STATUS,
   RABBIT_MQ_CONFIG,
   NOTIFICATION_TYPE,
+  DEFAULT_CLIENT,
+  REDIS_KEY_TYPE,
 };
