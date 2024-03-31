@@ -10,13 +10,13 @@ const notificationRoutes = require("./notification.route");
 const checkApiKey = require("../../../middleware/checkApiKey");
 const checkPermission = require("../../../middleware/checkPermission");
 const pushLogToDiscord = require("../../../middleware/pushDiscord");
+const AuthController = require("../controllers/auth.controller");
 
 router.use(pushLogToDiscord);
-//check api key
-router.use(checkApiKey);
-//default permssion
-// router.use(checkPermission("0"));
+//route for other services verify api key
+router.get("/checkapikey", errorHandler(AuthController.checkApiKey));
 
+router.use(checkApiKey);
 router.use("/api/auth", authRoutes);
 
 router.use("/post", postRoutes);

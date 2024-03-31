@@ -4,7 +4,12 @@ const {
   MessageFactory,
   MessageClass,
 } = require("../../classes/factory/MessageFactory");
-const { MESSAGE_TYPE, NOTIFICATION_TYPE } = require("../../constant");
+const {
+  MESSAGE_TYPE,
+  NOTIFICATION_TYPE,
+  DEFAULT_CLIENT,
+  REDIS_KEY_TYPE,
+} = require("../../constant");
 const ChannelRepository = require("../../api/v1/models/repositories/channel.repo");
 const UserRepository = require("../../api/v1/models/repositories/user.repo");
 const { ObjectId } = require("mongoose/lib/types");
@@ -12,6 +17,8 @@ const {
   NotificationFactory,
 } = require("../../classes/factory/NotificationFactory");
 const notificationServiceIns = require("../../services/notification");
+const redisClientInstance = require("../../external/redis");
+const { mapRedisKey } = require("../../utils");
 
 const emitMessage = (channelId, newMess, type) => {
   const socketIO = Global.socketIO;
@@ -74,7 +81,7 @@ const handleSetSeenMessages = async function ({ channelId }) {
 const handleIncomingMessage = async function (data) {
   try {
     const { channelId, type: messageType, attrs } = data;
-    console.log("DÂT", data);
+    console.log("DATA", data);
     const channel = await ChannelRepository.findChannels({
       query: { _id: channelId },
     });
@@ -104,6 +111,13 @@ const handleIncomingMessage = async function (data) {
         },
       }
     );
+
+    const cacheKey = mapRedisKey(REDIS_KEY_TYPE.MESSAGE, channelId);
+    await redisClientInstance.getClient(DEFAULT_CLIENT).ZADD(cacheKey, {
+      score: new Date(newMessage.createdAt).getTime(),
+      value: JSON.stringify(newMessage),
+    });
+
     await notificationServiceIns.publishMessage(notification.stringify());
   } catch (er) {
     console.log("error handling incoming message", er);

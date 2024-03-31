@@ -43,6 +43,7 @@ app.use(
   express.static(path.join(__dirname, "upload/videos"))
 );
 app.use("/", mainRoute);
+
 app.use((req, res, next) => {
   const error = new Error("Not found");
   error.status = 404;

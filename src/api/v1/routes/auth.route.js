@@ -53,16 +53,6 @@ router.post("/login", errorHandler(AuthController.login));
 
 /**
  * @swagger
- * /auth/checkapikey:
- *   get:
- *     tags: [Auth]
- *     description: Check permission of api key
- *     responses:
- */
-router.get("/checkapikey", errorHandler(AuthController.checkApiKey));
-
-/**
- * @swagger
  * /auth/register:
  *   post:
  *     tags: [Auth]

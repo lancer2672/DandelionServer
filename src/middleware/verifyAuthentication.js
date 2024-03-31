@@ -31,6 +31,7 @@ const verifyAuthentication = errorHandler(async (req, res, next) => {
       req.refreshToken = refreshToken;
       return next();
     } catch (error) {
+      console.log("auth failed x-client-id", error);
       throw error;
     }
   }
