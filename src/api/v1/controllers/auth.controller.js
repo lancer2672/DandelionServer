@@ -35,7 +35,20 @@ exports.login = async (req, res) => {
     data: loginData,
   }).send(res);
 };
+exports.getCredentialByUserId = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    throw new BadRequestError("Invalid information");
+  }
 
+  const { user, credential } = await AuthService.getCredentialByUserId(
+    req.params.userId
+  );
+  new OK({
+    message: "success",
+    data: { user, credential },
+  }).send(res);
+};
 exports.checkApiKey = async function (req, res) {
   try {
     const apiKey = await ApiKeyService.findByKey(req.body.apikey);

@@ -262,6 +262,11 @@ class AuthService {
   static logout = async (userCredential) => {
     CredentialService.refreshCredentials(userCredential);
   };
+  static getCredentialByUserId = async (userId) => {
+    const user = await UserService.findById(userId);
+    const credential = await CredentialService.findById(user.credential);
+    return { user, credential };
+  };
 }
 
 module.exports = AuthService;
