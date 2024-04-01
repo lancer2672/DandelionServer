@@ -32,7 +32,6 @@ class CredentialService {
     credential.refreshToken = null;
     credential.accessToken = null;
     credential.publicKey = null;
-    credential.privateKey = null;
 
     await credential.save();
   };
@@ -43,18 +42,12 @@ class CredentialService {
     });
   };
 
-  static createCredential = async ({
-    email,
-    password,
-    publicKey,
-    privateKey,
-  }) => {
+  static createCredential = async ({ email, password, publicKey }) => {
     let credential = new CredentialModel({
       email,
       password,
       refreshTokensUsed: [],
       publicKey,
-      privateKey,
     });
     await credential.save();
     return credential;
