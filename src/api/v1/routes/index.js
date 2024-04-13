@@ -11,14 +11,14 @@ const checkApiKey = require("../../../middleware/checkApiKey");
 const pushLogToDiscord = require("../../../middleware/pushDiscord");
 const AuthController = require("../controllers/auth.controller");
 const errorHandler = require("../../../middleware/errorHandler");
-const checkGatewayRequest = require("../../../middleware/checkGateway");
+// const checkGatewayRequest = require("../../../middleware/checkGateway");
 
 router.use(pushLogToDiscord);
 // router.use(checkApiKey);
 
 router.get(
   "/credential/:userId",
-  errorHandler(checkGatewayRequest(AuthController.getCredentialByUserId))
+  errorHandler(AuthController.getCredentialByUserId)
 );
 //route for other services verify api key
 router.get("/checkapikey", AuthController.checkApiKey);
