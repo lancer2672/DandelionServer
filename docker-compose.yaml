@@ -11,15 +11,15 @@ services:
       - "8002:8002"
 
   main:
-    image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:7d355942ca51ee3407152c3de2d3d0ce6e72fd5d
+    image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:9f7643884e67e4f79176e21dd22f93c9617748f5
     ports:
       - "3000:3000"
 
   nginx:
-    image: your_username/nginx:tag
+    image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:latest
     ports:
       - "80:80"
     depends_on:
-      - service1
-      - service2
-      - service3
+      - movie
+      - notification
+      - main
