@@ -11,7 +11,7 @@ services:
       - "8002:8002"
 
   main:
-    image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:9f7643884e67e4f79176e21dd22f93c9617748f5
+    image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:b06e4f90909d0ec323344c0d8c5e1cc23fa0d2a7
     ports:
       - "3000:3000"
 

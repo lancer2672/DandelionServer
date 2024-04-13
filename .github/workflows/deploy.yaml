@@ -26,7 +26,7 @@ jobs:
       - name: "Create service key file"
         run: |
           touch serviceKey.json
-          echo "${{ secrets.SERVICE_KEY }}" > serviceKey.json
+          echo "${{ secrets.SERVICE_KEY }}" | base64 --decode > serviceKey.json
       - name: "Create private key file"
         run: |
           touch private.key
