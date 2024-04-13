@@ -1,5 +1,4 @@
 # This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
 name: Go
 
@@ -24,8 +23,12 @@ jobs:
         run: |
           touch .env
           echo "${{ secrets.APP_ENV }}" > .env
+      - name: "Create service key file"
+        run: |
           touch serviceKey.json
           echo "${{ secrets.SERVICE_KEY }}" > serviceKey.json
+      - name: "Create private key file"
+        run: |
           touch private.key
           echo "${{ secrets.PRIVATE_KEY }}" > private.key
       - name: Configure AWS credentials
