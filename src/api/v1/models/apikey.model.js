@@ -12,6 +12,10 @@ const ApiKeySchema = new Schema(
       type: Boolean,
       default: true,
     },
+    isApiGateway: {
+      type: Boolean,
+      default: false,
+    },
     role: {
       type: Schema.Types.ObjectId,
       ref: "Role",
