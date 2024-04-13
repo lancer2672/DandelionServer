@@ -14,7 +14,7 @@ const AuthController = require("../controllers/auth.controller");
 
 router.use(pushLogToDiscord);
 //route for other services verify api key
-router.get("/checkapikey", errorHandler(AuthController.checkApiKey));
+router.get("/checkapikey", AuthController.checkApiKey);
 
 router.use(checkApiKey);
 router.use("/api/auth", authRoutes);

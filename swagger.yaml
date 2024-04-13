@@ -39,12 +39,6 @@ paths:
           description: Incorrect information
         '404':
           description: User does not exist or has not been verified
-  /auth/checkapikey:
-    get:
-      tags:
-        - Auth
-      description: Check permission of api key
-      responses: null
   /auth/register:
     post:
       tags:
