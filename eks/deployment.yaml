@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: main-container
-          image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:4dfc1f5d3a6d10e382437753af3aa4e0fb9c2924
+          image: 008226931786.dkr.ecr.us-east-1.amazonaws.com/dandelion_server:dandelion-main
           ports:
             - containerPort: 3000
